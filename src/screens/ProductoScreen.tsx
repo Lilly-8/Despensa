@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import CampoTexto from '../components/CampoTexto';
@@ -48,6 +39,19 @@ export default function ProductoScreen({ navigation }: any) {
       ubicacion: 'alacena',
       fechaCaducidad: '',
     },
+    validate: (values) => {
+      const errors: Partial<Record<keyof ProductoForm, string>> = {};
+
+      if (!values.nombre.trim()) {
+        errors.nombre = 'Escribe el nombre del producto';
+      }
+
+      if (!values.fechaCaducidad) {
+        errors.fechaCaducidad = 'Elige la fecha de caducidad';
+      }
+
+      return errors;
+    },
     onSubmit: async (values) => {
       const cantidad = Number(values.cantidad.replace(',', '.')) || 1;
 
@@ -73,6 +77,8 @@ export default function ProductoScreen({ navigation }: any) {
     },
   });
 
+  const errorFecha = form.touched.fechaCaducidad ? form.errors.fechaCaducidad : undefined;
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -88,6 +94,7 @@ export default function ProductoScreen({ navigation }: any) {
           onChangeText={form.handleChange('nombre')}
           onBlur={form.handleBlur('nombre')}
           placeholder="Leche, jitomate, arroz..."
+          error={form.touched.nombre ? form.errors.nombre : undefined}
         />
         <CampoTexto
           etiqueta="Cantidad"
@@ -99,7 +106,7 @@ export default function ProductoScreen({ navigation }: any) {
 
         <Text style={styles.etiqueta}>Fecha de caducidad</Text>
         <TouchableOpacity
-          style={styles.selectorFecha}
+          style={[styles.selectorFecha, errorFecha ? styles.selectorFechaError : null]}
           onPress={() => setMostrarCalendario(true)}
         >
           <Text
@@ -111,6 +118,7 @@ export default function ProductoScreen({ navigation }: any) {
           </Text>
           <Ionicons name="calendar-outline" size={20} color={colores.primario} />
         </TouchableOpacity>
+        {errorFecha ? <Text style={styles.textoError}>{errorFecha}</Text> : null}
 
         {mostrarCalendario ? (
           <DateTimePicker
@@ -230,5 +238,13 @@ const styles = StyleSheet.create({
   textoSinFecha: {
     fontSize: 16,
     color: colores.textoSuave,
+  },
+  selectorFechaError: {
+    borderColor: colores.urgente,
+  },
+  textoError: {
+    fontSize: 13,
+    color: colores.urgente,
+    marginBottom: espacios.s,
   },
 });
