@@ -7,7 +7,7 @@ interface CampoTextoProps {
   onChangeText: (texto: string) => void;
   onBlur?: () => void;
   placeholder?: string;
-  error?: string; 
+  error?: string;
   keyboardType?: KeyboardTypeOptions;
 }
 

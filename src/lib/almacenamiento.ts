@@ -27,12 +27,9 @@ export async function leerProductos(): Promise<Producto[]> {
   }
 }
 
+// Si falla, el error llega a la pantalla para que pueda avisar al usuario.
 export async function guardarProductos(productos: Producto[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(CLAVE_PRODUCTOS, JSON.stringify(productos));
-  } catch (error) {
-    console.error('Error al guardar productos:', error);
-  }
+  await AsyncStorage.setItem(CLAVE_PRODUCTOS, JSON.stringify(productos));
 }
 
 // Agrega un producto nuevo al final de la lista
