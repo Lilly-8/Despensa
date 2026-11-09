@@ -61,7 +61,8 @@ export default function DespensaScreen({ navigation }: any) {
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
-    setProductos(ordenarPorFecha(guardados));
+    const activos = guardados.filter((p) => p.estado === 'activo');
+    setProductos(ordenarPorFecha(activos));
   };
 
 

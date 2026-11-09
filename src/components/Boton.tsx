@@ -4,22 +4,30 @@ import { colores, espacios, bordes } from '../constants/colores';
 interface BotonProps {
   texto: string;
   onPress: () => void;
-  secundario?: boolean; 
+  secundario?: boolean;
+  peligro?: boolean; // en rojo, para acciones que borran algo
   desactivado?: boolean;
 }
 
-export default function Boton({ texto, onPress, secundario, desactivado }: BotonProps) {
+export default function Boton({ texto, onPress, secundario, peligro, desactivado }: BotonProps) {
   return (
     <TouchableOpacity
       style={[
         styles.boton,
+        peligro && styles.botonPeligro,
         secundario && styles.botonSecundario,
         desactivado && styles.botonDesactivado,
       ]}
       onPress={onPress}
       disabled={desactivado}
     >
-      <Text style={[styles.texto, secundario && styles.textoSecundario]}>
+      <Text
+        style={[
+          styles.texto,
+          secundario && styles.textoSecundario,
+          secundario && peligro && styles.textoPeligro,
+        ]}
+      >
         {texto}
       </Text>
     </TouchableOpacity>
@@ -36,6 +44,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: espacios.l,
     alignItems: 'center',
   },
+  botonPeligro: {
+    backgroundColor: colores.urgente,
+    borderColor: colores.urgente,
+  },
   botonSecundario: {
     backgroundColor: 'transparent',
   },
@@ -49,5 +61,8 @@ const styles = StyleSheet.create({
   },
   textoSecundario: {
     color: colores.primario,
+  },
+  textoPeligro: {
+    color: colores.urgente,
   },
 });

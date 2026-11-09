@@ -9,6 +9,7 @@ import useForm from '../hooks/useForm';
 import {
   actualizarProducto,
   agregarProducto,
+  eliminarProducto,
   obtenerProducto,
   Producto,
 } from '../lib/almacenamiento';
@@ -123,6 +124,56 @@ export default function ProductoScreen({ navigation, route }: any) {
   }, [id]);
 
   const errorFecha = form.touched.fechaCaducidad ? form.errors.fechaCaducidad : undefined;
+
+  const confirmarEstado = (estado: 'consumido' | 'tirado') => {
+    if (!productoOriginal) return;
+
+    const mensaje =
+      estado === 'consumido'
+        ? `¿Marcar "${productoOriginal.nombre}" como consumido? Saldrá de tu despensa.`
+        : `¿Marcar "${productoOriginal.nombre}" como tirado? Saldrá de tu despensa y contará como desperdicio.`;
+
+    Alert.alert(estado === 'consumido' ? 'Me lo comí' : 'Lo tiré', mensaje, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Sí, marcar', onPress: () => guardarEstado(estado) },
+    ]);
+  };
+
+  // Cambia solo el estado; lo demás se queda como estaba guardado.
+  const guardarEstado = async (estado: 'consumido' | 'tirado') => {
+    if (!productoOriginal) return;
+
+    try {
+      await actualizarProducto({ ...productoOriginal, estado: estado });
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
+    }
+  };
+
+  const confirmarEliminar = () => {
+    if (!productoOriginal) return;
+
+    Alert.alert(
+      'Eliminar producto',
+      `¿Seguro que quieres eliminar "${productoOriginal.nombre}"? No se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await eliminarProducto(productoOriginal.id);
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('No se pudo eliminar', 'Intenta de nuevo.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -239,6 +290,16 @@ export default function ProductoScreen({ navigation, route }: any) {
           onPress={form.handleSubmit}
           desactivado={form.isSubmitting}
         />
+
+        {/* Acciones: solo al editar un producto que ya existe */}
+        {productoOriginal ? (
+          <View style={styles.acciones}>
+            <Text style={styles.etiqueta}>¿Ya no lo tienes?</Text>
+            <Boton texto="Me lo comí" onPress={() => confirmarEstado('consumido')} secundario />
+            <Boton texto="Lo tiré" onPress={() => confirmarEstado('tirado')} secundario />
+            <Boton texto="Eliminar" onPress={confirmarEliminar} secundario peligro />
+          </View>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -291,5 +352,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colores.urgente,
     marginBottom: espacios.s,
+  },
+  acciones: {
+    marginTop: espacios.xl,
+    paddingTop: espacios.l,
+    borderTopWidth: bordes.grosor,
+    borderTopColor: colores.borde,
+    gap: espacios.s,
   },
 });
