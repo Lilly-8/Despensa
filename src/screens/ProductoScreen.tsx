@@ -14,7 +14,7 @@ import {
   Producto,
 } from '../lib/almacenamiento';
 import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/fechas';
-import { pedirPermisoNotificaciones } from '../lib/notificaciones';
+import { pedirPermisoNotificaciones, programarAvisoCaducidad } from '../lib/notificaciones';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
 
@@ -94,6 +94,11 @@ export default function ProductoScreen({ navigation, route }: any) {
           await agregarProducto(nuevo);
 
           await pedirPermisoNotificaciones();
+
+          const notificacionId = await programarAvisoCaducidad(nuevo);
+          if (notificacionId) {
+            await actualizarProducto({ ...nuevo, notificacionId: notificacionId });
+          }
         }
         navigation.goBack();
       } catch (error) {

@@ -1,6 +1,12 @@
 import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Producto } from './almacenamiento';
+import { formatoMexico, sumarDias, textoAFecha } from './fechas';
+
+const DIAS_ANTICIPACION = 2;
+const HORA_AVISO = 9; // 9:00
+const MINUTO_AVISO = 0;
 
 
 export const CANAL_CADUCIDAD = 'caducidad';
@@ -65,5 +71,40 @@ export async function pedirPermisoNotificaciones(): Promise<boolean> {
   } catch (error) {
     console.error('Error al pedir permiso de notificaciones:', error);
     return false;
+  }
+}
+
+export async function programarAvisoCaducidad(producto: Producto): Promise<string | undefined> {
+  try {
+    if (!producto.fechaCaducidad) return undefined;
+
+    const permiso = await Notifications.getPermissionsAsync();
+    if (!permiso.granted) return undefined;
+
+    const fechaAviso = textoAFecha(sumarDias(producto.fechaCaducidad, -DIAS_ANTICIPACION));
+    fechaAviso.setHours(HORA_AVISO, MINUTO_AVISO, 0, 0);
+
+    if (fechaAviso.getTime() <= Date.now()) {
+      console.log(`Sin aviso para "${producto.nombre}": la hora del aviso ya pasó`);
+      return undefined;
+    }
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `Caduca en ${DIAS_ANTICIPACION} días`,
+        body: `"${producto.nombre}" caduca el ${formatoMexico(producto.fechaCaducidad)}. Úsalo pronto.`,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: fechaAviso,
+        channelId: CANAL_CADUCIDAD,
+      },
+    });
+
+    console.log(`Aviso programado para "${producto.nombre}" el ${fechaAviso.toLocaleString()} (id ${id})`);
+    return id;
+  } catch (error) {
+    console.error('Error al programar el aviso:', error);
+    return undefined;
   }
 }
