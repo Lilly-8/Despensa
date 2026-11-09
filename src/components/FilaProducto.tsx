@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Producto } from '../lib/almacenamiento';
-import { diasRestantes, formatoMexico } from '../lib/fechas';
+import { diasRestantes, formatoMexico, nivelUrgencia } from '../lib/fechas';
 import { UBICACIONES } from '../constants/opciones';
 import { colores, espacios, bordes } from '../constants/colores';
 
@@ -11,9 +11,7 @@ interface FilaProductoProps {
 }
 
 function colorUrgencia(dias: number): string {
-  if (dias <= 3) return colores.urgente; 
-  if (dias <= 7) return colores.pronto; 
-  return colores.tranquilo; 
+  return colores[nivelUrgencia(dias)];
 }
 
 

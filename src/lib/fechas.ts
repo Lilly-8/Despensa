@@ -28,6 +28,14 @@ export function diasRestantes(texto: string): number {
   return Math.round((fecha.getTime() - hoyFecha.getTime()) / MS_POR_DIA);
 }
 
+// Nivel de urgencia según los días que le quedan (sección Diseño de CLAUDE.md).
+// Los nombres coinciden con los colores del tema: colores.urgente, .pronto, .tranquilo
+export function nivelUrgencia(dias: number): 'urgente' | 'pronto' | 'tranquilo' {
+  if (dias <= 3) return 'urgente'; // incluye los ya caducados
+  if (dias <= 7) return 'pronto';
+  return 'tranquilo';
+}
+
 export function formatoMexico(texto: string): string {
   if (!texto) return '';
   const [año, mes, dia] = texto.split('-');
