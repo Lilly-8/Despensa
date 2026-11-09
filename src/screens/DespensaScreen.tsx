@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
+import CampoTexto from '../components/CampoTexto';
 import FilaProducto from '../components/FilaProducto';
 import { leerProductos, Producto } from '../lib/almacenamiento';
 import { colores, espacios, bordes } from '../constants/colores';
@@ -17,9 +18,30 @@ function ordenarPorFecha(productos: Producto[]): Producto[] {
   });
 }
 
+// Prepara un texto para comparar: minúsculas, sin espacios a los lados
+// y sin acentos ("Plátano" → "platano"). La ñ se queda igual.
+function normalizarTexto(texto: string): string {
+  return texto
+    .trim()
+    .toLowerCase()
+    .replace(/á/g, 'a')
+    .replace(/é/g, 'e')
+    .replace(/í/g, 'i')
+    .replace(/ó/g, 'o')
+    .replace(/ú/g, 'u')
+    .replace(/ü/g, 'u');
+}
+
 export default function DespensaScreen({ navigation }: any) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+
+
+  const textoBuscado = normalizarTexto(busqueda);
+  const productosFiltrados = productos.filter((p) =>
+    normalizarTexto(p.nombre).includes(textoBuscado)
+  );
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
@@ -48,8 +70,17 @@ export default function DespensaScreen({ navigation }: any) {
         titulo="Tus productos"
       />
 
+      <View style={styles.busqueda}>
+        <CampoTexto
+          etiqueta="Buscar"
+          value={busqueda}
+          onChangeText={setBusqueda}
+          placeholder="Nombre del producto"
+        />
+      </View>
+
       <FlatList
-        data={productos}
+        data={productosFiltrados}
         renderItem={({ item }) => (
           <FilaProducto
             producto={item}
@@ -59,10 +90,19 @@ export default function DespensaScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
         ListEmptyComponent={
-          <View style={styles.vacio}>
-            <Text style={styles.vacioTitulo}>Todavía no hay productos</Text>
-            <Text style={styles.vacioTexto}>Toca + para agregar el primero.</Text>
-          </View>
+          textoBuscado ? (
+            <View style={styles.vacio}>
+              <Text style={styles.vacioTitulo}>Sin resultados</Text>
+              <Text style={styles.vacioTexto}>
+                No hay productos que se llamen "{busqueda.trim()}".
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.vacio}>
+              <Text style={styles.vacioTitulo}>Todavía no hay productos</Text>
+              <Text style={styles.vacioTexto}>Toca + para agregar el primero.</Text>
+            </View>
+          )
         }
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -86,8 +126,11 @@ const styles = StyleSheet.create({
     backgroundColor: colores.fondo,
     paddingHorizontal: espacios.l,
   },
+  busqueda: {
+    paddingTop: espacios.m,
+  },
   lista: {
-    paddingBottom: espacios.xxl * 2, 
+    paddingBottom: espacios.xxl * 2,
   },
   separador: {
     height: bordes.grosor,
