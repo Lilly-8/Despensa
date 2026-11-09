@@ -21,7 +21,7 @@ type TabParamList = {
 
 type RootStackParamList = {
   MainTabs: undefined;
-  Producto: { id?: string } | undefined; // con id = editar, sin id = agregar
+  Producto: { id?: string } | undefined; 
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();

@@ -20,6 +20,14 @@ export function sumarDias(texto: string, dias: number): string {
   return fechaATexto(fecha);
 }
 
+
+export function diasRestantes(texto: string): number {
+  const fecha = textoAFecha(texto);
+  const hoyFecha = textoAFecha(hoy());
+  const MS_POR_DIA = 1000 * 60 * 60 * 24;
+  return Math.round((fecha.getTime() - hoyFecha.getTime()) / MS_POR_DIA);
+}
+
 export function formatoMexico(texto: string): string {
   if (!texto) return '';
   const [año, mes, dia] = texto.split('-');
