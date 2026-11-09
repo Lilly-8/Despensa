@@ -21,7 +21,7 @@ type TabParamList = {
 
 type RootStackParamList = {
   MainTabs: undefined;
-  Producto: undefined;
+  Producto: { id?: string } | undefined; // con id = editar, sin id = agregar
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -95,13 +95,13 @@ export default function App() {
           <Stack.Screen
             name="Producto"
             component={ProductoScreen}
-            options={{
-              title: 'Agregar producto',
+            options={({ route }) => ({
+              title: route.params?.id ? 'Editar producto' : 'Agregar producto',
               headerStyle: { backgroundColor: colores.fondo },
               headerTintColor: colores.primario,
               headerTitleStyle: { color: colores.texto },
               headerShadowVisible: false,
-            }}
+            })}
           />
         </Stack.Navigator>
       </NavigationContainer>

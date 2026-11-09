@@ -50,7 +50,12 @@ export default function DespensaScreen({ navigation }: any) {
 
       <FlatList
         data={productos}
-        renderItem={({ item }) => <FilaProducto producto={item} />}
+        renderItem={({ item }) => (
+          <FilaProducto
+            producto={item}
+            onPress={() => navigation.navigate('Producto', { id: item.id })}
+          />
+        )}
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
         ListEmptyComponent={

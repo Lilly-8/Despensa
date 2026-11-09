@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,12 @@ import CampoTexto from '../components/CampoTexto';
 import ChipFiltro from '../components/ChipFiltro';
 import Boton from '../components/Boton';
 import useForm from '../hooks/useForm';
-import { agregarProducto, Producto } from '../lib/almacenamiento';
+import {
+  actualizarProducto,
+  agregarProducto,
+  obtenerProducto,
+  Producto,
+} from '../lib/almacenamiento';
 import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/fechas';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
@@ -27,8 +32,11 @@ const ATAJOS_FECHA = [
   { texto: '+1 mes', dias: 30 },
 ];
 
-export default function ProductoScreen({ navigation }: any) {
+export default function ProductoScreen({ navigation, route }: any) {
+  const id = route.params?.id;
+
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [productoOriginal, setProductoOriginal] = useState<Producto | null>(null);
 
   const form = useForm<ProductoForm>({
     initialValues: {
@@ -53,29 +61,66 @@ export default function ProductoScreen({ navigation }: any) {
       return errors;
     },
     onSubmit: async (values) => {
+      if (id && !productoOriginal) return;
+
       const cantidad = Number(values.cantidad.replace(',', '.')) || 1;
 
-      const nuevo: Producto = {
-        id: Date.now().toString(),
-        nombre: values.nombre.trim(),
-        categoria: values.categoria,
-        cantidad: cantidad,
-        unidad: values.unidad,
-        ubicacion: values.ubicacion,
-        fechaCaducidad: values.fechaCaducidad,
-        fechaEstimada: false,
-        estado: 'activo',
-        creadoEn: new Date().toISOString(),
-      };
-
       try {
-        await agregarProducto(nuevo);
+        if (productoOriginal) {
+          await actualizarProducto({
+            ...productoOriginal,
+            nombre: values.nombre.trim(),
+            categoria: values.categoria,
+            cantidad: cantidad,
+            unidad: values.unidad,
+            ubicacion: values.ubicacion,
+            fechaCaducidad: values.fechaCaducidad,
+          });
+        } else {
+          const nuevo: Producto = {
+            id: Date.now().toString(),
+            nombre: values.nombre.trim(),
+            categoria: values.categoria,
+            cantidad: cantidad,
+            unidad: values.unidad,
+            ubicacion: values.ubicacion,
+            fechaCaducidad: values.fechaCaducidad,
+            fechaEstimada: false,
+            estado: 'activo',
+            creadoEn: new Date().toISOString(),
+          };
+          await agregarProducto(nuevo);
+        }
         navigation.goBack();
       } catch (error) {
         Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
       }
     },
   });
+
+  const cargarProducto = async (idProducto: string) => {
+    const producto = await obtenerProducto(idProducto);
+
+    if (!producto) {
+      Alert.alert('No se encontró el producto');
+      navigation.goBack();
+      return;
+    }
+
+    setProductoOriginal(producto);
+    form.handleChange('nombre')(producto.nombre);
+    form.handleChange('cantidad')(String(producto.cantidad));
+    form.handleChange('unidad')(producto.unidad);
+    form.handleChange('categoria')(producto.categoria);
+    form.handleChange('ubicacion')(producto.ubicacion);
+    form.handleChange('fechaCaducidad')(producto.fechaCaducidad);
+  };
+
+  useEffect(() => {
+    if (id) {
+      cargarProducto(id);
+    }
+  }, [id]);
 
   const errorFecha = form.touched.fechaCaducidad ? form.errors.fechaCaducidad : undefined;
 
