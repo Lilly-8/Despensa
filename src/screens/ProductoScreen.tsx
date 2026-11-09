@@ -14,6 +14,7 @@ import {
   Producto,
 } from '../lib/almacenamiento';
 import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/fechas';
+import { pedirPermisoNotificaciones } from '../lib/notificaciones';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
 
@@ -91,6 +92,8 @@ export default function ProductoScreen({ navigation, route }: any) {
             creadoEn: new Date().toISOString(),
           };
           await agregarProducto(nuevo);
+
+          await pedirPermisoNotificaciones();
         }
         navigation.goBack();
       } catch (error) {

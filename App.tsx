@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -11,6 +12,7 @@ import RecetasScreen from './src/screens/RecetasScreen';
 import ComprasScreen from './src/screens/ComprasScreen';
 import ProductoScreen from './src/screens/ProductoScreen';
 import { colores, bordes } from './src/constants/colores';
+import { configurarNotificaciones } from './src/lib/notificaciones';
 
 type TabParamList = {
   Inicio: undefined;
@@ -83,6 +85,11 @@ function MainTabs() {
 }
 
 export default function App() {
+
+  useEffect(() => {
+    configurarNotificaciones();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
