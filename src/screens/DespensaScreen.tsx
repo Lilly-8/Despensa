@@ -5,8 +5,20 @@ import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import CampoTexto from '../components/CampoTexto';
 import FilaProducto from '../components/FilaProducto';
+import ChipFiltro from '../components/ChipFiltro';
 import { leerProductos, Producto } from '../lib/almacenamiento';
 import { colores, espacios, bordes } from '../constants/colores';
+import { CATEGORIAS, UBICACIONES, Opcion } from '../constants/opciones';
+
+
+const FILTRO_CATEGORIAS: Opcion[] = [
+  { valor: '', texto: 'Todas las categorías' },
+  ...CATEGORIAS,
+];
+const FILTRO_UBICACIONES: Opcion[] = [
+  { valor: '', texto: 'Todas las ubicaciones' },
+  ...UBICACIONES,
+];
 
 // Ordena por fecha de caducidad: lo que caduca primero va arriba.
 // Los productos sin fecha se van al final.
@@ -18,8 +30,6 @@ function ordenarPorFecha(productos: Producto[]): Producto[] {
   });
 }
 
-// Prepara un texto para comparar: minúsculas, sin espacios a los lados
-// y sin acentos ("Plátano" → "platano"). La ñ se queda igual.
 function normalizarTexto(texto: string): string {
   return texto
     .trim()
@@ -36,12 +46,18 @@ export default function DespensaScreen({ navigation }: any) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const [categoria, setCategoria] = useState(''); // '' = todas
+  const [ubicacion, setUbicacion] = useState(''); // '' = todas
 
 
   const textoBuscado = normalizarTexto(busqueda);
-  const productosFiltrados = productos.filter((p) =>
-    normalizarTexto(p.nombre).includes(textoBuscado)
+  const productosFiltrados = productos.filter(
+    (p) =>
+      normalizarTexto(p.nombre).includes(textoBuscado) &&
+      (categoria === '' || p.categoria === categoria) &&
+      (ubicacion === '' || p.ubicacion === ubicacion)
   );
+  const hayFiltros = textoBuscado !== '' || categoria !== '' || ubicacion !== '';
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
@@ -80,6 +96,38 @@ export default function DespensaScreen({ navigation }: any) {
       </View>
 
       <FlatList
+        data={FILTRO_CATEGORIAS}
+        renderItem={({ item }) => (
+          <ChipFiltro
+            texto={item.texto}
+            seleccionado={categoria === item.valor}
+            onPress={() => setCategoria(item.valor)}
+          />
+        )}
+        keyExtractor={(item) => 'categoria-' + item.valor}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filtros}
+        contentContainerStyle={styles.filtrosContenido}
+      />
+
+      <FlatList
+        data={FILTRO_UBICACIONES}
+        renderItem={({ item }) => (
+          <ChipFiltro
+            texto={item.texto}
+            seleccionado={ubicacion === item.valor}
+            onPress={() => setUbicacion(item.valor)}
+          />
+        )}
+        keyExtractor={(item) => 'ubicacion-' + item.valor}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filtros}
+        contentContainerStyle={styles.filtrosContenido}
+      />
+
+      <FlatList
         data={productosFiltrados}
         renderItem={({ item }) => (
           <FilaProducto
@@ -90,11 +138,11 @@ export default function DespensaScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
         ListEmptyComponent={
-          textoBuscado ? (
+          hayFiltros ? (
             <View style={styles.vacio}>
               <Text style={styles.vacioTitulo}>Sin resultados</Text>
               <Text style={styles.vacioTexto}>
-                No hay productos que se llamen "{busqueda.trim()}".
+                Prueba con otro nombre o quita los filtros.
               </Text>
             </View>
           ) : (
@@ -128,6 +176,16 @@ const styles = StyleSheet.create({
   },
   busqueda: {
     paddingTop: espacios.m,
+  },
+  filtros: {
+    flexGrow: 0, 
+    flexShrink: 0, 
+    marginHorizontal: -espacios.l, 
+    marginBottom: espacios.s,
+  },
+  filtrosContenido: {
+    paddingHorizontal: espacios.l,
+    gap: espacios.s,
   },
   lista: {
     paddingBottom: espacios.xxl * 2,
