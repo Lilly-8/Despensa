@@ -14,7 +14,7 @@ import {
   Producto,
 } from '../lib/almacenamiento';
 import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/fechas';
-import { pedirPermisoNotificaciones, programarAvisoCaducidad } from '../lib/notificaciones';
+import { pedirPermisoNotificaciones, reprogramarAvisos } from '../lib/notificaciones';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
 
@@ -95,10 +95,8 @@ export default function ProductoScreen({ navigation, route }: any) {
 
           await pedirPermisoNotificaciones();
 
-          const notificacionId = await programarAvisoCaducidad(nuevo);
-          if (notificacionId) {
-            await actualizarProducto({ ...nuevo, notificacionId: notificacionId });
-          }
+          // Un aviso por día con todo lo que caduca ese día (incluye el producto nuevo)
+          await reprogramarAvisos();
         }
         navigation.goBack();
       } catch (error) {
