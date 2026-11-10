@@ -11,6 +11,7 @@ import DespensaScreen from './src/screens/DespensaScreen';
 import RecetasScreen from './src/screens/RecetasScreen';
 import ComprasScreen from './src/screens/ComprasScreen';
 import ProductoScreen from './src/screens/ProductoScreen';
+import AjustesScreen from './src/screens/AjustesScreen';
 import { colores, bordes } from './src/constants/colores';
 import { configurarNotificaciones } from './src/lib/notificaciones';
 
@@ -23,7 +24,8 @@ type TabParamList = {
 
 type RootStackParamList = {
   MainTabs: undefined;
-  Producto: { id?: string } | undefined; 
+  Producto: { id?: string } | undefined;
+  Ajustes: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -109,6 +111,17 @@ export default function App() {
               headerTitleStyle: { color: colores.texto },
               headerShadowVisible: false,
             })}
+          />
+          <Stack.Screen
+            name="Ajustes"
+            component={AjustesScreen}
+            options={{
+              title: 'Ajustes',
+              headerStyle: { backgroundColor: colores.fondo },
+              headerTintColor: colores.primario,
+              headerTitleStyle: { color: colores.texto },
+              headerShadowVisible: false,
+            }}
           />
         </Stack.Navigator>
       </NavigationContainer>

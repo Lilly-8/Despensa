@@ -1,14 +1,10 @@
 import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { leerProductos } from './almacenamiento';
+import { leerAjustes, leerProductos } from './almacenamiento';
 import { formatoMexico, sumarDias, textoAFecha } from './fechas';
 
-
-const DIAS_ANTICIPACION = 2;
-const HORA_AVISO = 9; // 9:00
-const MINUTO_AVISO = 0;
-
+// Los días de anticipación y la hora del aviso vienen de Ajustes (leerAjustes)
 
 export const CANAL_CADUCIDAD = 'caducidad';
 const CLAVE_PREGUNTADO = 'permisoNotificacionesPreguntado';
@@ -80,6 +76,21 @@ export async function pedirPermisoNotificaciones(): Promise<boolean> {
   }
 }
 
+// ¿Hay permiso de notificaciones? Solo consulta, no le pregunta nada al usuario.
+export async function tienePermisoNotificaciones(): Promise<boolean> {
+  try {
+    const permiso = await Notifications.getPermissionsAsync();
+    return permiso.granted;
+  } catch (error) {
+    return false;
+  }
+}
+
+// "mañana" o "en 3 días", para el título del aviso
+function textoAnticipacion(dias: number): string {
+  return dias === 1 ? 'mañana' : `en ${dias} días`;
+}
+
 // Productos que caducan el mismo día (comparten un solo aviso)
 interface GrupoAviso {
   fechaCaducidad: string; // 'YYYY-MM-DD'
@@ -95,19 +106,25 @@ function unirNombres(nombres: string[]): string {
   return nombres.slice(0, 3).join(', ') + ` y ${nombres.length - 3} más`;
 }
 
-// Borra todos los avisos y los vuelve a programar desde cero:
 // UN aviso por día, con todos los productos activos que caducan ese día.
-// Se llama después de cualquier cambio en la despensa y siempre deja todo correcto.
 export async function reprogramarAvisos(): Promise<void> {
   try {
     const permiso = await Notifications.getPermissionsAsync();
-    if (!permiso.granted) return;
+    if (!permiso.granted) {
+      console.log('Avisos: no hay permiso de notificaciones, no se programa nada');
+      return;
+    }
 
     // 1. Quitar todos los avisos que había
     await Notifications.cancelAllScheduledNotificationsAsync();
 
     // 2. Agrupar los productos activos por fecha de caducidad
     const productos = await leerProductos();
+
+    // Días y hora elegidos en Ajustes ('09:00' → hora 9, minuto 0)
+    const ajustes = await leerAjustes();
+    const dias = ajustes.diasAnticipacion;
+    const [hora, minuto] = ajustes.horaAviso.split(':').map(Number);
     const grupos: GrupoAviso[] = [];
 
     for (const producto of productos) {
@@ -121,21 +138,23 @@ export async function reprogramarAvisos(): Promise<void> {
       }
     }
 
-    // 3. Programar un aviso por grupo (for...of porque hay await adentro)
     for (const grupo of grupos) {
-      // Ej. caducan el 12/11 → aviso el 10/11 a las 9:00 en hora local
-      const fechaAviso = textoAFecha(sumarDias(grupo.fechaCaducidad, -DIAS_ANTICIPACION));
-      fechaAviso.setHours(HORA_AVISO, MINUTO_AVISO, 0, 0);
+      const fechaAviso = textoAFecha(sumarDias(grupo.fechaCaducidad, -dias));
+      fechaAviso.setHours(hora, minuto, 0, 0);
 
-      // Si la hora del aviso ya pasó (ej. caducan mañana), no programar nada
-      if (fechaAviso.getTime() <= Date.now()) continue;
+      if (fechaAviso.getTime() <= Date.now()) {
+        console.log(
+          `Sin aviso para ${unirNombres(grupo.nombres)}: la hora del aviso (${fechaAviso.toLocaleString()}) ya pasó`
+        );
+        continue;
+      }
 
       const varios = grupo.nombres.length > 1;
       await Notifications.scheduleNotificationAsync({
         content: {
           title: varios
-            ? `${grupo.nombres.length} productos caducan en ${DIAS_ANTICIPACION} días`
-            : `Caduca en ${DIAS_ANTICIPACION} días`,
+            ? `${grupo.nombres.length} productos caducan ${textoAnticipacion(dias)}`
+            : `Caduca ${textoAnticipacion(dias)}`,
           body: varios
             ? `${unirNombres(grupo.nombres)}. Úsalos pronto.`
             : `"${grupo.nombres[0]}" caduca el ${formatoMexico(grupo.fechaCaducidad)}. Úsalo pronto.`,
@@ -147,9 +166,11 @@ export async function reprogramarAvisos(): Promise<void> {
         },
       });
 
-      // Aparece en la terminal de Expo: sirve para comprobar sin esperar días
       console.log(`Aviso el ${fechaAviso.toLocaleString()}: ${unirNombres(grupo.nombres)}`);
     }
+
+    const programados = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`Avisos programados en total: ${programados.length}`);
   } catch (error) {
     console.error('Error al reprogramar los avisos:', error);
   }

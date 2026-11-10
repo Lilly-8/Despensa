@@ -60,3 +60,34 @@ export async function eliminarProducto(id: string): Promise<void> {
   const nuevos = productos.filter((p) => p.id !== id);
   await guardarProductos(nuevos);
 }
+
+// Ajustes según el modelo de datos de docs/arquitectura.md
+export interface Ajustes {
+  diasAnticipacion: number; // por defecto 2
+  horaAviso: string; // 'HH:MM', por defecto '09:00'
+}
+
+const CLAVE_AJUSTES = 'ajustes';
+
+export const AJUSTES_POR_DEFECTO: Ajustes = {
+  diasAnticipacion: 2,
+  horaAviso: '09:00',
+};
+
+// Lee los ajustes. Si nunca se han guardado, regresa los de por defecto.
+export async function leerAjustes(): Promise<Ajustes> {
+  try {
+    const texto = await AsyncStorage.getItem(CLAVE_AJUSTES);
+    if (!texto) return AJUSTES_POR_DEFECTO;
+    // Lo guardado encima de los de por defecto, por si falta algún campo
+    return { ...AJUSTES_POR_DEFECTO, ...JSON.parse(texto) };
+  } catch (error) {
+    console.error('Error al leer ajustes:', error);
+    return AJUSTES_POR_DEFECTO;
+  }
+}
+
+// Si falla, el error llega a la pantalla para que pueda avisar al usuario.
+export async function guardarAjustes(ajustes: Ajustes): Promise<void> {
+  await AsyncStorage.setItem(CLAVE_AJUSTES, JSON.stringify(ajustes));
+}

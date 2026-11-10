@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { AppState, SectionList, StyleSheet, Text, View } from 'react-native';
+import { AppState, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import FilaProducto from '../components/FilaProducto';
 import { leerProductos, Producto } from '../lib/almacenamiento';
@@ -89,10 +90,19 @@ export default function InicioScreen({ navigation }: any) {
         ItemSeparatorComponent={() => <View style={styles.separador} />}
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={
-          <Encabezado
-            etiqueta="Mi despensa"
-            titulo="Lo que hay en casa"
-          />
+          <View>
+            <Encabezado
+              etiqueta="Mi despensa"
+              titulo="Lo que hay en casa"
+            />
+            {/* Acceso a Ajustes, arriba a la derecha */}
+            <TouchableOpacity
+              style={styles.botonAjustes}
+              onPress={() => navigation.navigate('Ajustes')}
+            >
+              <Ionicons name="settings-outline" size={24} color={colores.primario} />
+            </TouchableOpacity>
+          </View>
         }
         ListEmptyComponent={
           <View style={styles.vacio}>
@@ -114,6 +124,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colores.fondo,
     paddingHorizontal: espacios.l,
+  },
+  botonAjustes: {
+    position: 'absolute',
+    top: espacios.xl,
+    right: 0,
+    padding: espacios.xs,
   },
   lista: {
     paddingBottom: espacios.xl,
