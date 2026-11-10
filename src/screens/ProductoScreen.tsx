@@ -78,6 +78,8 @@ export default function ProductoScreen({ navigation, route }: any) {
             ubicacion: values.ubicacion,
             fechaCaducidad: values.fechaCaducidad,
           });
+
+          await reprogramarAvisos();
         } else {
           const nuevo: Producto = {
             id: Date.now().toString(),
@@ -95,7 +97,6 @@ export default function ProductoScreen({ navigation, route }: any) {
 
           await pedirPermisoNotificaciones();
 
-          // Un aviso por día con todo lo que caduca ese día (incluye el producto nuevo)
           await reprogramarAvisos();
         }
         navigation.goBack();
@@ -145,12 +146,12 @@ export default function ProductoScreen({ navigation, route }: any) {
     ]);
   };
 
-  // Cambia solo el estado; lo demás se queda como estaba guardado.
   const guardarEstado = async (estado: 'consumido' | 'tirado') => {
     if (!productoOriginal) return;
 
     try {
       await actualizarProducto({ ...productoOriginal, estado: estado });
+      await reprogramarAvisos();
       navigation.goBack();
     } catch (error) {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
@@ -171,6 +172,8 @@ export default function ProductoScreen({ navigation, route }: any) {
           onPress: async () => {
             try {
               await eliminarProducto(productoOriginal.id);
+              // Ya no existe: sale de los avisos
+              await reprogramarAvisos();
               navigation.goBack();
             } catch (error) {
               Alert.alert('No se pudo eliminar', 'Intenta de nuevo.');
