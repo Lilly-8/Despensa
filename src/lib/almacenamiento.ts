@@ -63,8 +63,8 @@ export async function eliminarProducto(id: string): Promise<void> {
 
 // Ajustes según el modelo de datos de docs/arquitectura.md
 export interface Ajustes {
-  diasAnticipacion: number; // por defecto 2
-  horaAviso: string; // 'HH:MM', por defecto '09:00'
+  diasAnticipacion: number; 
+  horaAviso: string; 
 }
 
 const CLAVE_AJUSTES = 'ajustes';
@@ -90,4 +90,54 @@ export async function leerAjustes(): Promise<Ajustes> {
 // Si falla, el error llega a la pantalla para que pueda avisar al usuario.
 export async function guardarAjustes(ajustes: Ajustes): Promise<void> {
   await AsyncStorage.setItem(CLAVE_AJUSTES, JSON.stringify(ajustes));
+}
+
+// Lista de compras según el modelo de datos de docs/arquitectura.md
+export interface ItemCompra {
+  id: string; // Date.now().toString()
+  nombre: string;
+  cantidad: number;
+  unidad: string; // pza, kg, l...
+  comprado: boolean;
+}
+
+const CLAVE_LISTA_COMPRAS = 'lista_compras';
+
+// Lee toda la lista de compras. Si no hay nada, regresa un arreglo vacío.
+export async function leerListaCompras(): Promise<ItemCompra[]> {
+  try {
+    const texto = await AsyncStorage.getItem(CLAVE_LISTA_COMPRAS);
+    return JSON.parse(texto || '[]');
+  } catch (error) {
+    console.error('Error al leer la lista de compras:', error);
+    return [];
+  }
+}
+
+// Guarda la lista completa (reemplaza lo que había).
+// Si falla, el error llega a la pantalla para que pueda avisar al usuario.
+export async function guardarListaCompras(items: ItemCompra[]): Promise<void> {
+  await AsyncStorage.setItem(CLAVE_LISTA_COMPRAS, JSON.stringify(items));
+}
+
+// Agrega un item nuevo al final de la lista.
+export async function agregarItemCompra(item: ItemCompra): Promise<void> {
+  const items = await leerListaCompras();
+  items.push(item);
+  await guardarListaCompras(items);
+}
+
+// Reemplaza el item que tenga el mismo id por la versión nueva
+// (por ejemplo, al marcarlo como comprado).
+export async function actualizarItemCompra(itemActualizado: ItemCompra): Promise<void> {
+  const items = await leerListaCompras();
+  const nuevos = items.map((i) => (i.id === itemActualizado.id ? itemActualizado : i));
+  await guardarListaCompras(nuevos);
+}
+
+// Quita de la lista el item con ese id.
+export async function eliminarItemCompra(id: string): Promise<void> {
+  const items = await leerListaCompras();
+  const nuevos = items.filter((i) => i.id !== id);
+  await guardarListaCompras(nuevos);
 }
