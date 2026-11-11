@@ -7,6 +7,7 @@ import CampoTexto from '../components/CampoTexto';
 import FilaProducto from '../components/FilaProducto';
 import ChipFiltro from '../components/ChipFiltro';
 import { leerProductos, Producto } from '../lib/almacenamiento';
+import { normalizarTexto } from '../lib/texto';
 import { colores, espacios, bordes } from '../constants/colores';
 import { CATEGORIAS, UBICACIONES, Opcion } from '../constants/opciones';
 
@@ -28,18 +29,6 @@ function ordenarPorFecha(productos: Producto[]): Producto[] {
     if (!b.fechaCaducidad) return -1;
     return a.fechaCaducidad.localeCompare(b.fechaCaducidad);
   });
-}
-
-function normalizarTexto(texto: string): string {
-  return texto
-    .trim()
-    .toLowerCase()
-    .replace(/á/g, 'a')
-    .replace(/é/g, 'e')
-    .replace(/í/g, 'i')
-    .replace(/ó/g, 'o')
-    .replace(/ú/g, 'u')
-    .replace(/ü/g, 'u');
 }
 
 export default function DespensaScreen({ navigation }: any) {

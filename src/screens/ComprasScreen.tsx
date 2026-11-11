@@ -11,12 +11,23 @@ import {
   eliminarItemCompra,
   ItemCompra,
   leerListaCompras,
+  leerProductos,
+  Producto,
 } from '../lib/almacenamiento';
+import { diasRestantes, formatoMexico } from '../lib/fechas';
+import { normalizarTexto } from '../lib/texto';
 import { colores, espacios, bordes } from '../constants/colores';
 
 interface SeccionCompras {
   titulo: string;
   data: ItemCompra[];
+}
+
+// "caduca el 12/11/2026", "caducó el 05/11/2026" o "sin fecha"
+function textoCaducidad(producto: Producto): string {
+  if (!producto.fechaCaducidad) return 'sin fecha';
+  const fecha = formatoMexico(producto.fechaCaducidad);
+  return diasRestantes(producto.fechaCaducidad) < 0 ? `caducó el ${fecha}` : `caduca el ${fecha}`;
 }
 
 export default function ComprasScreen({ navigation }: any) {
@@ -56,8 +67,40 @@ export default function ComprasScreen({ navigation }: any) {
       comprado: false,
     };
 
+    // ¿Ya hay algo con ese nombre en la despensa? (sin importar mayúsculas ni acentos;
+    // "leche" encuentra "Leche" y "Leche entera")
+    const productos = await leerProductos();
+    const buscado = normalizarTexto(nombreLimpio);
+    const enDespensa = productos.filter(
+      (p) => p.estado === 'activo' && normalizarTexto(p.nombre).includes(buscado)
+    );
+
+    if (enDespensa.length === 0) {
+      await guardarItem(nuevo);
+      return;
+    }
+
+    // Avisa qué hay y cuándo caduca, y deja decidir
+    const detalle = enDespensa
+      .slice(0, 3)
+      .map((p) => `• ${p.nombre}: ${p.cantidad} ${p.unidad}, ${textoCaducidad(p)}`)
+      .join('\n');
+    const resto = enDespensa.length > 3 ? `\n…y ${enDespensa.length - 3} más` : '';
+
+    Alert.alert(
+      `Ya tienes "${nombreLimpio}"`,
+      `En tu despensa:\n${detalle}${resto}\n\n¿Agregarlo a la lista de todos modos?`,
+      [
+        { text: 'No agregar', style: 'cancel' },
+        { text: 'Agregar', onPress: () => guardarItem(nuevo) },
+      ]
+    );
+  };
+
+  // Guarda el item en la lista y limpia el formulario
+  const guardarItem = async (item: ItemCompra) => {
     try {
-      await agregarItemCompra(nuevo);
+      await agregarItemCompra(item);
       setNombre('');
       setCantidad('1');
       await cargarLista();
