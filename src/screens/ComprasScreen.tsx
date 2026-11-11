@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import CampoTexto from '../components/CampoTexto';
 import Boton from '../components/Boton';
 import {
+  actualizarItemCompra,
   agregarItemCompra,
   eliminarItemCompra,
   ItemCompra,
@@ -13,10 +14,22 @@ import {
 } from '../lib/almacenamiento';
 import { colores, espacios, bordes } from '../constants/colores';
 
+interface SeccionCompras {
+  titulo: string;
+  data: ItemCompra[];
+}
+
 export default function ComprasScreen({ navigation }: any) {
   const [items, setItems] = useState<ItemCompra[]>([]);
   const [nombre, setNombre] = useState('');
   const [cantidad, setCantidad] = useState('1');
+
+  // Dos secciones: lo que falta comprar arriba, lo ya comprado abajo.
+  // Las secciones vacías no se muestran.
+  const secciones: SeccionCompras[] = [
+    { titulo: 'Pendientes', data: items.filter((i) => !i.comprado) },
+    { titulo: 'Comprados', data: items.filter((i) => i.comprado) },
+  ].filter((s) => s.data.length > 0);
 
   const cargarLista = async () => {
     setItems(await leerListaCompras());
@@ -62,9 +75,29 @@ export default function ComprasScreen({ navigation }: any) {
     }
   };
 
+  // Cambia de pendiente a comprado, o al revés
+  const alternarComprado = async (item: ItemCompra) => {
+    try {
+      await actualizarItemCompra({ ...item, comprado: !item.comprado });
+      await cargarLista();
+    } catch (error) {
+      Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
+    }
+  };
+
   const renderItem = ({ item }: { item: ItemCompra }) => (
     <View style={styles.fila}>
-      <Text style={styles.nombre}>{item.nombre}</Text>
+      {/* Casilla: toda la parte izquierda se puede tocar */}
+      <TouchableOpacity style={styles.casilla} onPress={() => alternarComprado(item)}>
+        <Ionicons
+          name={item.comprado ? 'checkbox-outline' : 'square-outline'}
+          size={24}
+          color={item.comprado ? colores.primario : colores.textoSuave}
+        />
+        <Text style={[styles.nombre, item.comprado ? styles.nombreComprado : null]}>
+          {item.nombre}
+        </Text>
+      </TouchableOpacity>
       <Text style={styles.cantidad}>
         {/* Solo la cantidad: la unidad se elige al pasarlo a la despensa */}
         x {item.cantidad}
@@ -103,9 +136,15 @@ export default function ComprasScreen({ navigation }: any) {
       </View>
       <Boton texto="Agregar a la lista" onPress={agregar} desactivado={!nombre.trim()} />
 
-      <FlatList
-        data={items}
+      <SectionList
+        sections={secciones}
         renderItem={renderItem}
+        renderSectionHeader={({ section }) => (
+          <Text style={styles.seccionTitulo}>
+            {section.titulo} · {section.data.length}
+          </Text>
+        )}
+        stickySectionHeadersEnabled={false}
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
         ListEmptyComponent={
@@ -151,10 +190,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: espacios.m,
   },
+  casilla: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.m,
+  },
   nombre: {
     flex: 1,
     fontSize: 17,
     color: colores.texto,
+  },
+  nombreComprado: {
+    color: colores.textoSuave,
+    textDecorationLine: 'line-through',
+  },
+  seccionTitulo: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colores.texto,
+    paddingTop: espacios.l,
+    paddingBottom: espacios.s,
+    borderBottomWidth: bordes.grosor,
+    borderBottomColor: colores.borde,
   },
   cantidad: {
     fontSize: 14,
