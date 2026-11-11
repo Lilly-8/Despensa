@@ -128,6 +128,17 @@ export default function ComprasScreen({ navigation }: any) {
     }
   };
 
+  // Abre el formulario de producto con los datos del item.
+  // Al guardar ahí, el formulario lo quita de esta lista.
+  const pasarADespensa = (item: ItemCompra) => {
+    navigation.navigate('Producto', {
+      itemCompraId: item.id,
+      nombre: item.nombre,
+      cantidad: item.cantidad,
+      unidad: item.unidad,
+    });
+  };
+
   const renderItem = ({ item }: { item: ItemCompra }) => (
     <View style={styles.fila}>
       {/* Casilla: toda la parte izquierda se puede tocar */}
@@ -145,7 +156,13 @@ export default function ComprasScreen({ navigation }: any) {
         {/* Solo la cantidad: la unidad se elige al pasarlo a la despensa */}
         x {item.cantidad}
       </Text>
-      <TouchableOpacity style={styles.botonEliminar} onPress={() => eliminar(item.id)}>
+      {/* Solo en los comprados: pasarlo a la despensa (mismo ícono que la tab Despensa) */}
+      {item.comprado ? (
+        <TouchableOpacity style={styles.botonIcono} onPress={() => pasarADespensa(item)}>
+          <Ionicons name="file-tray-stacked-outline" size={20} color={colores.primario} />
+        </TouchableOpacity>
+      ) : null}
+      <TouchableOpacity style={styles.botonIcono} onPress={() => eliminar(item.id)}>
         <Ionicons name="trash-outline" size={20} color={colores.textoSuave} />
       </TouchableOpacity>
     </View>
@@ -264,7 +281,7 @@ const styles = StyleSheet.create({
     color: colores.textoSuave,
     marginRight: espacios.m,
   },
-  botonEliminar: {
+  botonIcono: {
     padding: espacios.xs,
   },
   separador: {

@@ -24,7 +24,17 @@ type TabParamList = {
 
 type RootStackParamList = {
   MainTabs: undefined;
-  Producto: { id?: string } | undefined;
+  // id = editar un producto. itemCompraId + nombre/cantidad/unidad = pasar
+  // un item de la lista de compras a la despensa. Sin nada = agregar uno nuevo.
+  Producto:
+    | {
+        id?: string;
+        itemCompraId?: string;
+        nombre?: string;
+        cantidad?: number;
+        unidad?: string;
+      }
+    | undefined;
   Ajustes: undefined;
 };
 

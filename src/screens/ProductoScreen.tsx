@@ -9,6 +9,7 @@ import useForm from '../hooks/useForm';
 import {
   actualizarProducto,
   agregarProducto,
+  eliminarItemCompra,
   eliminarProducto,
   obtenerProducto,
   Producto,
@@ -36,15 +37,21 @@ const ATAJOS_FECHA = [
 
 export default function ProductoScreen({ navigation, route }: any) {
   const id = route.params?.id;
+  // Si viene de la lista de compras: el item que hay que quitar al guardar,
+  // y sus datos para prellenar el formulario
+  const itemCompraId = route.params?.itemCompraId;
+  const nombreInicial = route.params?.nombre || '';
+  const cantidadInicial = route.params?.cantidad ? String(route.params.cantidad) : '1';
+  const unidadInicial = route.params?.unidad || 'pza';
 
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [productoOriginal, setProductoOriginal] = useState<Producto | null>(null);
 
   const form = useForm<ProductoForm>({
     initialValues: {
-      nombre: '',
-      cantidad: '1',
-      unidad: 'pza',
+      nombre: nombreInicial,
+      cantidad: cantidadInicial,
+      unidad: unidadInicial,
       categoria: 'otros',
       ubicacion: 'alacena',
       fechaCaducidad: '',
@@ -98,6 +105,11 @@ export default function ProductoScreen({ navigation, route }: any) {
           await pedirPermisoNotificaciones();
 
           await reprogramarAvisos();
+
+          // Venía de la lista de compras: ya está en la despensa, se quita de la lista
+          if (itemCompraId) {
+            await eliminarItemCompra(itemCompraId);
+          }
         }
         navigation.goBack();
       } catch (error) {
