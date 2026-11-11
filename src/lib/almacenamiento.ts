@@ -92,7 +92,7 @@ export async function guardarAjustes(ajustes: Ajustes): Promise<void> {
   await AsyncStorage.setItem(CLAVE_AJUSTES, JSON.stringify(ajustes));
 }
 
-// Lista de compras según el modelo de datos de docs/arquitectura.md
+// Lista de compras 
 export interface ItemCompra {
   id: string; // Date.now().toString()
   nombre: string;
