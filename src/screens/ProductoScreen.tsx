@@ -8,13 +8,16 @@ import Boton from '../components/Boton';
 import useForm from '../hooks/useForm';
 import {
   actualizarProducto,
+  agregarItemCompra,
   agregarProducto,
   eliminarItemCompra,
+  leerListaCompras,
   eliminarProducto,
   obtenerProducto,
   Producto,
 } from '../lib/almacenamiento';
 import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/fechas';
+import { normalizarTexto } from '../lib/texto';
 import { pedirPermisoNotificaciones, reprogramarAvisos } from '../lib/notificaciones';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
@@ -164,10 +167,61 @@ export default function ProductoScreen({ navigation, route }: any) {
     try {
       await actualizarProducto({ ...productoOriginal, estado: estado });
       await reprogramarAvisos();
-      navigation.goBack();
     } catch (error) {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
+      return;
     }
+
+    // Consumido o tirado: en los dos casos ya no lo tienes.
+    // Si ya está pendiente en la lista de compras, no preguntar.
+    if (await yaEstaEnLaLista(productoOriginal)) {
+      navigation.goBack();
+    } else {
+      preguntarAgregarACompras(productoOriginal, estado);
+    }
+  };
+
+  // ¿Hay en la lista de compras un item PENDIENTE con ese nombre?
+  // Misma comparación que el aviso de Compras: sin acentos y "contiene"
+  // (si en la lista está "Leche", cuenta para "Leche entera").
+  const yaEstaEnLaLista = async (producto: Producto): Promise<boolean> => {
+    const lista = await leerListaCompras();
+    const nombreProducto = normalizarTexto(producto.nombre);
+    return lista.some(
+      (item) => !item.comprado && nombreProducto.includes(normalizarTexto(item.nombre))
+    );
+  };
+
+  // Después de consumir algo: ¿hay que volver a comprarlo?
+  // Con cualquier respuesta se regresa a Despensa.
+  const preguntarAgregarACompras = (producto: Producto, estado: 'consumido' | 'tirado') => {
+    Alert.alert(
+      '¿Agregarlo a la lista de compras?',
+      estado === 'consumido'
+        ? `Para no quedarte sin "${producto.nombre}".`
+        : `Para reponer "${producto.nombre}".`,
+      [
+        { text: 'No', style: 'cancel', onPress: () => navigation.goBack() },
+        {
+          text: 'Sí, agregar',
+          onPress: async () => {
+            try {
+              await agregarItemCompra({
+                id: Date.now().toString(),
+                nombre: producto.nombre,
+                cantidad: producto.cantidad,
+                unidad: producto.unidad,
+                comprado: false,
+              });
+            } catch (error) {
+              Alert.alert('No se pudo agregar a la lista', 'Intenta de nuevo desde Compras.');
+            }
+            navigation.goBack();
+          },
+        },
+      ],
+      { cancelable: false } // en Android, tocar fuera no deja la pantalla sin regresar
+    );
   };
 
   const confirmarEliminar = () => {
