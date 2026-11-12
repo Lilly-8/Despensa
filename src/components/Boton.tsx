@@ -5,7 +5,7 @@ interface BotonProps {
   texto: string;
   onPress: () => void;
   secundario?: boolean;
-  peligro?: boolean; // en rojo, para acciones que borran algo
+  peligro?: boolean; 
   desactivado?: boolean;
 }
 

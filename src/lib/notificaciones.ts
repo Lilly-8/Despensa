@@ -4,7 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { leerAjustes, leerProductos } from './almacenamiento';
 import { formatoMexico, sumarDias, textoAFecha } from './fechas';
 
-// Los días de anticipación y la hora del aviso vienen de Ajustes (leerAjustes)
 
 export const CANAL_CADUCIDAD = 'caducidad';
 const CLAVE_PREGUNTADO = 'permisoNotificacionesPreguntado';
