@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Producto } from './almacenamiento';
-import { hoy } from './fechas';
+import { diasRestantes, hoy } from './fechas';
 
 // Formato que devuelve la Edge Function "recetas" (docs/arquitectura.md, sección Backend)
 export interface Ingrediente {
@@ -130,4 +131,65 @@ export async function pedirRecetas(productos: Producto[]): Promise<Receta[]> {
   }
 
   return validas;
+}
+
+// ---------- Productos que se mandan ----------
+
+// Los productos que sirven para cocinar: activos, con fecha y sin caducar
+export function productosParaRecetas(productos: Producto[]): Producto[] {
+  return productos.filter(
+    (p) => p.estado === 'activo' && p.fechaCaducidad !== '' && diasRestantes(p.fechaCaducidad) >= 0
+  );
+}
+
+// ---------- Caché ----------
+// Se guarda la última respuesta junto con una "huella" de la despensa con la que
+// se pidió. Si la huella de hoy es igual, la despensa no cambió y no hace falta
+// volver a pedir (cuida la cuota gratuita de Gemini y evita esperar un minuto).
+
+export interface CacheRecetas {
+  clave: string; // huella de la despensa con la que se pidieron
+  recetas: Receta[];
+  guardadoEn: string; // fecha y hora, en formato ISO
+}
+
+const CLAVE_CACHE = 'cache_recetas';
+
+// Huella de la despensa: la fecha de hoy + nombre, fecha, cantidad y unidad de
+// cada producto, ordenados para que el orden no importe.
+// Incluye hoy porque las recetas dicen "caducan mañana": al día siguiente ya no sirven.
+export function claveDespensa(productos: Producto[]): string {
+  const partes = productos
+    .map((p) => `${p.nombre}|${p.fechaCaducidad}|${p.cantidad}|${p.unidad}`)
+    .sort();
+  return hoy() + '#' + partes.join(';');
+}
+
+// Lee la caché. Si no hay o viene mal, regresa null.
+export async function leerCacheRecetas(): Promise<CacheRecetas | null> {
+  try {
+    const texto = await AsyncStorage.getItem(CLAVE_CACHE);
+    if (!texto) return null;
+
+    const cache = JSON.parse(texto);
+    // Se valida igual que la respuesta del servidor
+    if (!cache || typeof cache.clave !== 'string' || !Array.isArray(cache.recetas)) return null;
+    const recetas: Receta[] = cache.recetas.filter(esRecetaValida);
+    if (recetas.length === 0) return null;
+
+    return { clave: cache.clave, recetas: recetas, guardadoEn: String(cache.guardadoEn) };
+  } catch (error) {
+    console.error('Error al leer la caché de recetas:', error);
+    return null;
+  }
+}
+
+// Guarda la respuesta. Si falla no pasa nada grave: la próxima vez se vuelve a pedir.
+export async function guardarCacheRecetas(clave: string, recetas: Receta[]): Promise<void> {
+  try {
+    const cache: CacheRecetas = { clave, recetas, guardadoEn: new Date().toISOString() };
+    await AsyncStorage.setItem(CLAVE_CACHE, JSON.stringify(cache));
+  } catch (error) {
+    console.error('Error al guardar la caché de recetas:', error);
+  }
 }

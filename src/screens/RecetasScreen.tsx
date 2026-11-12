@@ -1,18 +1,60 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNetInfo } from '@react-native-community/netinfo';
 import Encabezado from '../components/Encabezado';
 import Boton from '../components/Boton';
 import { leerProductos } from '../lib/almacenamiento';
-import { diasRestantes } from '../lib/fechas';
-import { pedirRecetas, Receta } from '../lib/recetas';
+import { fechaATexto, formatoMexico } from '../lib/fechas';
+import {
+  claveDespensa,
+  guardarCacheRecetas,
+  leerCacheRecetas,
+  pedirRecetas,
+  productosParaRecetas,
+  Receta,
+} from '../lib/recetas';
 import { colores, espacios, bordes } from '../constants/colores';
 
-export default function RecetasScreen() {
+// '2026-11-11T00:30:00.000Z' → '10/11/2026 a las 18:30' (hora local)
+function textoFechaHora(iso: string): string {
+  const fecha = new Date(iso);
+  const hora = String(fecha.getHours()).padStart(2, '0');
+  const minutos = String(fecha.getMinutes()).padStart(2, '0');
+  return `${formatoMexico(fechaATexto(fecha))} a las ${hora}:${minutos}`;
+}
+
+export default function RecetasScreen({ navigation }: any) {
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(''); // '' = sin error
+
+  // Caché: si lo que se ve viene de la caché, cuándo se guardó
+  // y si la despensa sigue igual que cuando se pidieron
+  const [desdeCache, setDesdeCache] = useState(false);
+  const [guardadoEn, setGuardadoEn] = useState('');
+  const [despensaIgual, setDespensaIgual] = useState(false);
+
+  // Muestra las últimas recetas guardadas y revisa si la despensa cambió
+  const cargarCache = async () => {
+    const cache = await leerCacheRecetas();
+    if (!cache) return;
+
+    const productos = productosParaRecetas(await leerProductos());
+    setRecetas(cache.recetas);
+    setDesdeCache(true);
+    setGuardadoEn(cache.guardadoEn);
+    setDespensaIgual(cache.clave === claveDespensa(productos));
+  };
+
+  // Cada vez que se entra a la tab (la despensa pudo cambiar en otra pantalla)
+  useEffect(() => {
+    const sub = navigation.addListener('focus', () => {
+      cargarCache();
+    });
+
+    return sub;
+  }, [navigation]);
 
   // Como en los ejemplos de clase: isConnected = hay wifi o datos;
   // isInternetReachable = además internet responde. Puede ser null ("aún no sé"),
@@ -22,10 +64,7 @@ export default function RecetasScreen() {
 
   const generarRecetas = async () => {
     // Solo productos activos, con fecha y que no hayan caducado
-    const productos = await leerProductos();
-    const disponibles = productos.filter(
-      (p) => p.estado === 'activo' && p.fechaCaducidad !== '' && diasRestantes(p.fechaCaducidad) >= 0
-    );
+    const disponibles = productosParaRecetas(await leerProductos());
 
     if (disponibles.length === 0) {
       Alert.alert(
@@ -38,7 +77,11 @@ export default function RecetasScreen() {
     setError('');
     setCargando(true);
     try {
-      setRecetas(await pedirRecetas(disponibles));
+      const nuevas = await pedirRecetas(disponibles);
+      setRecetas(nuevas);
+      setDesdeCache(false); // son recién pedidas
+      // Se guardan con la huella de la despensa que se mandó
+      await guardarCacheRecetas(claveDespensa(disponibles), nuevas);
     } catch (e: any) {
       // Las recetas anteriores se quedan; arriba se explica qué pasó
       setError(e.message);
@@ -100,11 +143,31 @@ export default function RecetasScreen() {
 
       <View style={styles.boton}>
         <Boton
-          texto={cargando ? 'Generando…' : 'Generar recetas'}
+          texto={
+            cargando
+              ? 'Generando…'
+              : desdeCache && despensaIgual
+                ? 'Pedir otras recetas'
+                : 'Generar recetas'
+          }
           onPress={generarRecetas}
           desactivado={cargando || sinConexion}
         />
       </View>
+
+      {/* Indicador honesto de la caché: de dónde viene lo que se ve */}
+      {desdeCache && !cargando && recetas.length > 0 ? (
+        <View style={[styles.aviso, despensaIgual ? styles.avisoCache : styles.avisoSinConexion]}>
+          <Text style={styles.avisoTitulo}>
+            {despensaIgual ? 'Recetas guardadas' : 'Tu despensa cambió'}
+          </Text>
+          <Text style={styles.avisoTexto}>
+            {despensaIgual
+              ? `Son del ${textoFechaHora(guardadoEn)}. Tu despensa no ha cambiado, así que no se volvieron a pedir.`
+              : `Estas recetas son del ${textoFechaHora(guardadoEn)}, de antes de tus últimos cambios. Toca "Generar recetas" para actualizarlas.`}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Error: qué pasó y cómo seguir */}
       {error && !cargando ? (
@@ -191,6 +254,9 @@ const styles = StyleSheet.create({
   },
   avisoError: {
     borderLeftColor: colores.urgente,
+  },
+  avisoCache: {
+    borderLeftColor: colores.tranquilo,
   },
   avisoTitulo: {
     fontSize: 16,
