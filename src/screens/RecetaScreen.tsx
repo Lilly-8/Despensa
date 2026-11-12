@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { leerProductos, Producto } from '../lib/almacenamiento';
-import { conIngredientesAlDia, Receta } from '../lib/recetas';
+import Boton from '../components/Boton';
+import {
+  guardarListaCompras,
+  leerListaCompras,
+  leerProductos,
+  Producto,
+} from '../lib/almacenamiento';
+import { conIngredientesAlDia, mismoNombre, Receta } from '../lib/recetas';
 import { colores, espacios, bordes } from '../constants/colores';
 
 // Detalle de una receta. La receta completa llega por los parámetros de
@@ -26,6 +32,53 @@ export default function RecetaScreen({ route }: any) {
 
   const tengo = receta.ingredientes.filter((i) => i.tengo);
   const faltan = receta.ingredientes.filter((i) => !i.tengo);
+
+  const [agregando, setAgregando] = useState(false);
+  const [agregados, setAgregados] = useState(false);
+
+  // Agrega a la lista de compras los ingredientes que faltan.
+  // Se salta los que ya están pendientes en la lista, para no duplicarlos.
+  const agregarFaltantes = async () => {
+    setAgregando(true);
+    try {
+      const lista = await leerListaCompras();
+      const pendientes = lista.filter((item) => !item.comprado);
+
+      let nuevos = 0;
+      let yaEstaban = 0;
+      // Se arma la lista nueva en memoria y al final se guarda una sola vez
+      for (const ingrediente of faltan) {
+        const yaEsta = pendientes.some((item) => mismoNombre(ingrediente.nombre, item.nombre));
+        if (yaEsta) {
+          yaEstaban++;
+          continue;
+        }
+        lista.push({
+          // Date.now() solo no basta: todos se crean en el mismo milisegundo
+          id: Date.now() + '-' + nuevos,
+          nombre: ingrediente.nombre,
+          cantidad: 1, // "al gusto" o "2 tazas" no caben en un número
+          unidad: 'pza',
+          comprado: false,
+        });
+        nuevos++;
+      }
+
+      await guardarListaCompras(lista); // una sola escritura para todos
+      setAgregados(true);
+
+      const mensaje =
+        nuevos === 0
+          ? 'Todos ya estaban en tu lista de compras.'
+          : `Se agregaron ${nuevos} a tu lista de compras.` +
+            (yaEstaban > 0 ? ` ${yaEstaban} ya estaban.` : '');
+      Alert.alert('Lista de compras', mensaje);
+    } catch (error) {
+      Alert.alert('No se pudo agregar', 'Intenta de nuevo.');
+    } finally {
+      setAgregando(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.contenedor} contentContainerStyle={styles.contenido}>
@@ -71,6 +124,18 @@ export default function RecetaScreen({ route }: any) {
           </View>
         ))
       )}
+
+      {/* Mandar lo que falta a la lista de compras */}
+      {faltan.length > 0 ? (
+        <View style={styles.botonFaltantes}>
+          <Boton
+            texto={agregados ? 'Ya están en tu lista de compras' : 'Agregar faltantes a compras'}
+            onPress={agregarFaltantes}
+            desactivado={agregados || agregando}
+            secundario
+          />
+        </View>
+      ) : null}
 
       {/* Pasos, numerados */}
       <Text style={styles.seccion}>Pasos</Text>
@@ -162,6 +227,9 @@ const styles = StyleSheet.create({
   ingredienteCantidad: {
     fontSize: 14,
     color: colores.textoSuave,
+  },
+  botonFaltantes: {
+    marginTop: espacios.m,
   },
   paso: {
     flexDirection: 'row',

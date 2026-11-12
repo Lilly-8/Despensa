@@ -218,14 +218,16 @@ function mismaPalabra(a: string, b: string): boolean {
 // ("Jamón de pavo" encuentra "Jamón"; "Sal" NO encuentra "Salsa").
 // El agua es la única excepción: siempre se tiene.
 export function tengoIngrediente(nombreIngrediente: string, productos: Producto[]): boolean {
-  const delIngrediente = palabras(nombreIngrediente);
-  if (delIngrediente[0] === 'agua') return true;
+  if (palabras(nombreIngrediente)[0] === 'agua') return true;
+  return productos.some((producto) => mismoNombre(nombreIngrediente, producto.nombre));
+}
 
-  return productos.some((producto) =>
-    palabras(producto.nombre).some((palabra) =>
-      delIngrediente.some((otra) => mismaPalabra(palabra, otra))
-    )
-  );
+// ¿Dos nombres hablan de lo mismo? Basta con que compartan una palabra
+// ("Jamón de pavo" y "Jamón" sí; "Sal" y "Salsa" no).
+// Sirve para la despensa y para la lista de compras.
+export function mismoNombre(nombreA: string, nombreB: string): boolean {
+  const deB = palabras(nombreB);
+  return palabras(nombreA).some((palabra) => deB.some((otra) => mismaPalabra(palabra, otra)));
 }
 
 // La misma receta, con "tengo" recalculado contra los productos activos
