@@ -54,7 +54,7 @@ Reglas:
   Da prioridad a los que caducan antes.
 - Usa sobre todo productos de la despensa. Puedes agregar pocos ingredientes extra.
 - En "ingredientes", "tengo" es true solo si el ingrediente está en la despensa.
-  Sal, pimienta, aceite y agua cuentan como que sí los tiene.
+  Solo el agua cuenta como que sí la tiene; la sal, el aceite y lo demás solo si están en la despensa.
 - En "aprovecha" lista solo productos de la despensa que caducan en 7 días o menos,
   con el formato "espinacas (caducan mañana)" o "leche (caduca en 3 días)".
 - "tiempo_min" es el tiempo total en minutos.
