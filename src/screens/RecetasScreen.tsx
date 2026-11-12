@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNetInfo } from '@react-native-community/netinfo';
 import Encabezado from '../components/Encabezado';
 import Boton from '../components/Boton';
 import { leerProductos } from '../lib/almacenamiento';
@@ -11,6 +12,13 @@ import { colores, espacios, bordes } from '../constants/colores';
 export default function RecetasScreen() {
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(''); // '' = sin error
+
+  // Como en los ejemplos de clase: isConnected = hay wifi o datos;
+  // isInternetReachable = además internet responde. Puede ser null ("aún no sé"),
+  // y eso NO se trata como "sin conexión".
+  const { isConnected, isInternetReachable } = useNetInfo();
+  const sinConexion = isConnected === false || isInternetReachable === false;
 
   const generarRecetas = async () => {
     // Solo productos activos, con fecha y que no hayan caducado
@@ -27,11 +35,13 @@ export default function RecetasScreen() {
       return;
     }
 
+    setError('');
     setCargando(true);
     try {
       setRecetas(await pedirRecetas(disponibles));
-    } catch (error: any) {
-      Alert.alert('No se pudieron generar recetas', error.message);
+    } catch (e: any) {
+      // Las recetas anteriores se quedan; arriba se explica qué pasó
+      setError(e.message);
     } finally {
       setCargando(false);
     }
@@ -54,6 +64,22 @@ export default function RecetasScreen() {
     );
   };
 
+  // Lo que se ve cuando todavía no hay recetas en la lista
+  const listaVacia = cargando ? (
+    <View style={styles.cargando}>
+      <ActivityIndicator size="large" color={colores.primario} />
+      <Text style={styles.cargandoTitulo}>Buscando recetas con lo que tienes…</Text>
+      <Text style={styles.cargandoTexto}>Puede tardar hasta un minuto.</Text>
+    </View>
+  ) : error ? undefined : (
+    <View style={styles.vacio}>
+      <Text style={styles.vacioTitulo}>Todavía no hay recetas</Text>
+      <Text style={styles.vacioTexto}>
+        Toca "Generar recetas" para ver ideas que aprovechan lo que está por caducar.
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.contenedor} edges={['top']}>
       <Encabezado
@@ -61,29 +87,52 @@ export default function RecetasScreen() {
         titulo="Qué cocinar hoy"
       />
 
+      {/* El indicador honesto: decir la verdad sobre la conexión */}
+      {sinConexion ? (
+        <View style={[styles.aviso, styles.avisoSinConexion]}>
+          <Text style={styles.avisoTitulo}>Sin conexión</Text>
+          <Text style={styles.avisoTexto}>
+            Las recetas necesitan internet. Tu despensa, la lista de compras y los avisos
+            funcionan igual.
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.boton}>
         <Boton
           texto={cargando ? 'Generando…' : 'Generar recetas'}
           onPress={generarRecetas}
-          desactivado={cargando}
+          desactivado={cargando || sinConexion}
         />
       </View>
+
+      {/* Error: qué pasó y cómo seguir */}
+      {error && !cargando ? (
+        <View style={[styles.aviso, styles.avisoError]}>
+          <Text style={styles.avisoTitulo}>No se pudieron generar recetas</Text>
+          <Text style={styles.avisoTexto}>{error}</Text>
+          {recetas.length > 0 ? (
+            <Text style={styles.avisoTexto}>Abajo siguen las recetas anteriores.</Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* Ya hay recetas y se están pidiendo otras: avisar que se van a reemplazar */}
+      {cargando && recetas.length > 0 ? (
+        <View style={styles.actualizando}>
+          <ActivityIndicator size="small" color={colores.primario} />
+          <Text style={styles.actualizandoTexto}>
+            Generando nuevas recetas; reemplazarán a las de abajo.
+          </Text>
+        </View>
+      ) : null}
 
       <FlatList
         data={recetas}
         renderItem={renderReceta}
         keyExtractor={(item, index) => index + '-' + item.titulo}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
-        ListEmptyComponent={
-          cargando ? undefined : (
-            <View style={styles.vacio}>
-              <Text style={styles.vacioTitulo}>Todavía no hay recetas</Text>
-              <Text style={styles.vacioTexto}>
-                Toca "Generar recetas" para ver ideas que aprovechan lo que está por caducar.
-              </Text>
-            </View>
-          )
-        }
+        ListEmptyComponent={listaVacia}
         contentContainerStyle={styles.lista}
         showsVerticalScrollIndicator={false}
       />
@@ -126,6 +175,58 @@ const styles = StyleSheet.create({
   separador: {
     height: bordes.grosor,
     backgroundColor: colores.borde,
+  },
+  // Avisos (sin conexión y error): borde fino con una barra de color a la izquierda
+  aviso: {
+    marginTop: espacios.m,
+    padding: espacios.m,
+    borderWidth: bordes.grosor,
+    borderColor: colores.borde,
+    borderRadius: bordes.radio,
+    borderLeftWidth: 3,
+    gap: espacios.xs,
+  },
+  avisoSinConexion: {
+    borderLeftColor: colores.pronto,
+  },
+  avisoError: {
+    borderLeftColor: colores.urgente,
+  },
+  avisoTitulo: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colores.texto,
+  },
+  avisoTexto: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colores.textoSuave,
+  },
+  cargando: {
+    alignItems: 'center',
+    paddingTop: espacios.xxl,
+    gap: espacios.s,
+  },
+  cargandoTitulo: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colores.texto,
+    marginTop: espacios.s,
+  },
+  cargandoTexto: {
+    fontSize: 14,
+    color: colores.textoSuave,
+  },
+  actualizando: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.s,
+    paddingVertical: espacios.s,
+  },
+  actualizandoTexto: {
+    flex: 1,
+    fontSize: 14,
+    color: colores.textoSuave,
   },
   vacio: {
     paddingTop: espacios.l,
