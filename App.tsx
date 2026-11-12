@@ -12,6 +12,8 @@ import RecetasScreen from './src/screens/RecetasScreen';
 import ComprasScreen from './src/screens/ComprasScreen';
 import ProductoScreen from './src/screens/ProductoScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
+import RecetaScreen from './src/screens/RecetaScreen';
+import { Receta } from './src/lib/recetas';
 import { colores, bordes } from './src/constants/colores';
 import { configurarNotificaciones } from './src/lib/notificaciones';
 
@@ -36,6 +38,7 @@ type RootStackParamList = {
       }
     | undefined;
   Ajustes: undefined;
+  Receta: { receta: Receta }; // la receta completa, desde RecetasScreen
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -127,6 +130,17 @@ export default function App() {
             component={AjustesScreen}
             options={{
               title: 'Ajustes',
+              headerStyle: { backgroundColor: colores.fondo },
+              headerTintColor: colores.primario,
+              headerTitleStyle: { color: colores.texto },
+              headerShadowVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="Receta"
+            component={RecetaScreen}
+            options={{
+              title: 'Receta', // el título largo va dentro de la pantalla
               headerStyle: { backgroundColor: colores.fondo },
               headerTintColor: colores.primario,
               headerTitleStyle: { color: colores.texto },

@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNetInfo } from '@react-native-community/netinfo';
 import Encabezado from '../components/Encabezado';
 import Boton from '../components/Boton';
-import { leerProductos } from '../lib/almacenamiento';
+import { leerProductos, Producto } from '../lib/almacenamiento';
 import { fechaATexto, formatoMexico } from '../lib/fechas';
 import {
   claveDespensa,
@@ -12,6 +20,7 @@ import {
   leerCacheRecetas,
   pedirRecetas,
   productosParaRecetas,
+  conIngredientesAlDia,
   Receta,
 } from '../lib/recetas';
 import { colores, espacios, bordes } from '../constants/colores';
@@ -26,6 +35,7 @@ function textoFechaHora(iso: string): string {
 
 export default function RecetasScreen({ navigation }: any) {
   const [recetas, setRecetas] = useState<Receta[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(''); // '' = sin error
 
@@ -37,14 +47,17 @@ export default function RecetasScreen({ navigation }: any) {
 
   // Muestra las últimas recetas guardadas y revisa si la despensa cambió
   const cargarCache = async () => {
+    // La despensa actual: sirve para saber qué ingredientes tienes
+    const todos = await leerProductos();
+    setProductos(todos);
+
     const cache = await leerCacheRecetas();
     if (!cache) return;
 
-    const productos = productosParaRecetas(await leerProductos());
     setRecetas(cache.recetas);
     setDesdeCache(true);
     setGuardadoEn(cache.guardadoEn);
-    setDespensaIgual(cache.clave === claveDespensa(productos));
+    setDespensaIgual(cache.clave === claveDespensa(productosParaRecetas(todos)));
   };
 
   // Cada vez que se entra a la tab (la despensa pudo cambiar en otra pantalla)
@@ -64,7 +77,9 @@ export default function RecetasScreen({ navigation }: any) {
 
   const generarRecetas = async () => {
     // Solo productos activos, con fecha y que no hayan caducado
-    const disponibles = productosParaRecetas(await leerProductos());
+    const todos = await leerProductos();
+    setProductos(todos);
+    const disponibles = productosParaRecetas(todos);
 
     if (disponibles.length === 0) {
       Alert.alert(
@@ -91,11 +106,16 @@ export default function RecetasScreen({ navigation }: any) {
   };
 
   const renderReceta = ({ item }: { item: Receta }) => {
-    const tengo = item.ingredientes.filter((i) => i.tengo).length;
-    const total = item.ingredientes.length;
+    // "Tienes X de Y" calculado contra tu despensa, no con lo que dijo la IA
+    const alDia = conIngredientesAlDia(item, productos);
+    const tengo = alDia.ingredientes.filter((i) => i.tengo).length;
+    const total = alDia.ingredientes.length;
 
     return (
-      <View style={styles.receta}>
+      <TouchableOpacity
+        style={styles.receta}
+        onPress={() => navigation.navigate('Receta', { receta: item })}
+      >
         <Text style={styles.titulo}>{item.titulo}</Text>
         <Text style={styles.detalle}>
           {item.tiempo_min} min · Tienes {tengo} de {total} ingredientes
@@ -103,7 +123,7 @@ export default function RecetasScreen({ navigation }: any) {
         {item.aprovecha.length > 0 ? (
           <Text style={styles.aprovecha}>Aprovecha: {item.aprovecha.join(', ')}</Text>
         ) : null}
-      </View>
+      </TouchableOpacity>
     );
   };
 

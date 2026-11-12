@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Producto } from './almacenamiento';
 import { diasRestantes, hoy } from './fechas';
+import { normalizarTexto } from './texto';
 
 // Formato que devuelve la Edge Function "recetas" (docs/arquitectura.md, sección Backend)
 export interface Ingrediente {
@@ -192,4 +193,49 @@ export async function guardarCacheRecetas(clave: string, recetas: Receta[]): Pro
   } catch (error) {
     console.error('Error al guardar la caché de recetas:', error);
   }
+}
+
+// ---------- Qué ingredientes tengo ----------
+// No se confía en lo que diga la IA: la app compara cada ingrediente con la
+// despensa actual. Así siempre está al día (si compras jitomate después, la
+// receta guardada ya lo muestra como "tienes").
+
+// Palabras que no ayudan a comparar ("Tortillas de maíz" → tortillas, maiz)
+const PALABRAS_VACIAS = ['con', 'del', 'las', 'los', 'una', 'para', 'sin', 'por'];
+
+function palabras(texto: string): string[] {
+  return normalizarTexto(texto)
+    .split(/[^a-zñ]+/)
+    .filter((p) => p.length > 2 && !PALABRAS_VACIAS.includes(p));
+}
+
+// Misma palabra aceptando plural: huevo/huevos, limon/limones
+function mismaPalabra(a: string, b: string): boolean {
+  return a === b || a === b + 's' || a === b + 'es' || b === a + 's' || b === a + 'es';
+}
+
+// ¿Este ingrediente está en la despensa? Compara palabra por palabra
+// ("Jamón de pavo" encuentra "Jamón"; "Sal" NO encuentra "Salsa").
+// El agua es la única excepción: siempre se tiene.
+export function tengoIngrediente(nombreIngrediente: string, productos: Producto[]): boolean {
+  const delIngrediente = palabras(nombreIngrediente);
+  if (delIngrediente[0] === 'agua') return true;
+
+  return productos.some((producto) =>
+    palabras(producto.nombre).some((palabra) =>
+      delIngrediente.some((otra) => mismaPalabra(palabra, otra))
+    )
+  );
+}
+
+// La misma receta, con "tengo" recalculado contra los productos activos
+export function conIngredientesAlDia(receta: Receta, productos: Producto[]): Receta {
+  const activos = productos.filter((p) => p.estado === 'activo');
+  return {
+    ...receta,
+    ingredientes: receta.ingredientes.map((ingrediente) => ({
+      ...ingrediente,
+      tengo: tengoIngrediente(ingrediente.nombre, activos),
+    })),
+  };
 }
