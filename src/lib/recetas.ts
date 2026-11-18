@@ -203,14 +203,15 @@ export async function guardarCacheRecetas(clave: string, recetas: Receta[]): Pro
 // Palabras que no ayudan a comparar ("Tortillas de maíz" → tortillas, maiz)
 const PALABRAS_VACIAS = ['con', 'del', 'las', 'los', 'una', 'para', 'sin', 'por'];
 
-function palabras(texto: string): string[] {
+// También la usa la tabla de vida útil (src/lib/vidaUtil.ts)
+export function palabras(texto: string): string[] {
   return normalizarTexto(texto)
     .split(/[^a-zñ]+/)
     .filter((p) => p.length > 2 && !PALABRAS_VACIAS.includes(p));
 }
 
 // Misma palabra aceptando plural: huevo/huevos, limon/limones
-function mismaPalabra(a: string, b: string): boolean {
+export function mismaPalabra(a: string, b: string): boolean {
   return a === b || a === b + 's' || a === b + 'es' || b === a + 's' || b === a + 'es';
 }
 

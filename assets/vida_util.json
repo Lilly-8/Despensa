@@ -1,0 +1,492 @@
+[
+  {
+    "nombre": "plátano macho",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 268
+  },
+  {
+    "nombre": "queso fresco",
+    "sinonimos": [
+      "panela"
+    ],
+    "categoria": "lacteos",
+    "refrigerador": 10,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 546
+  },
+  {
+    "nombre": "carne molida",
+    "sinonimos": [],
+    "categoria": "carnes",
+    "refrigerador": 2,
+    "alacena": null,
+    "congelador": 120,
+    "foodkeeper": 43
+  },
+  {
+    "nombre": "manzana",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 42,
+    "alacena": 21,
+    "congelador": 240,
+    "foodkeeper": 248
+  },
+  {
+    "nombre": "aguacate",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 4,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 250
+  },
+  {
+    "nombre": "plátano",
+    "sinonimos": [
+      "platano",
+      "banana"
+    ],
+    "categoria": "frutas",
+    "refrigerador": 3,
+    "alacena": null,
+    "congelador": 90,
+    "foodkeeper": 251
+  },
+  {
+    "nombre": "limón",
+    "sinonimos": [
+      "limon"
+    ],
+    "categoria": "frutas",
+    "refrigerador": 21,
+    "alacena": 10,
+    "congelador": null,
+    "foodkeeper": 256
+  },
+  {
+    "nombre": "naranja",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 21,
+    "alacena": 10,
+    "congelador": null,
+    "foodkeeper": 256
+  },
+  {
+    "nombre": "mandarina",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 21,
+    "alacena": 10,
+    "congelador": null,
+    "foodkeeper": 256
+  },
+  {
+    "nombre": "toronja",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 21,
+    "alacena": 10,
+    "congelador": null,
+    "foodkeeper": 256
+  },
+  {
+    "nombre": "uva",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 7,
+    "alacena": 1,
+    "congelador": 30,
+    "foodkeeper": 261
+  },
+  {
+    "nombre": "papaya",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 7,
+    "alacena": 5,
+    "congelador": 240,
+    "foodkeeper": 265
+  },
+  {
+    "nombre": "mango",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 7,
+    "alacena": 5,
+    "congelador": 240,
+    "foodkeeper": 265
+  },
+  {
+    "nombre": "durazno",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 60,
+    "foodkeeper": 266
+  },
+  {
+    "nombre": "pera",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 60,
+    "foodkeeper": 266
+  },
+  {
+    "nombre": "piña",
+    "sinonimos": [
+      "pina"
+    ],
+    "categoria": "frutas",
+    "refrigerador": 7,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 267
+  },
+  {
+    "nombre": "fresa",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 3,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 481
+  },
+  {
+    "nombre": "melón",
+    "sinonimos": [
+      "melon"
+    ],
+    "categoria": "frutas",
+    "refrigerador": 15,
+    "alacena": 4,
+    "congelador": 360,
+    "foodkeeper": 496
+  },
+  {
+    "nombre": "sandía",
+    "sinonimos": [
+      "sandia"
+    ],
+    "categoria": "frutas",
+    "refrigerador": 4,
+    "alacena": 2,
+    "congelador": 360,
+    "foodkeeper": 495
+  },
+  {
+    "nombre": "guayaba",
+    "sinonimos": [],
+    "categoria": "frutas",
+    "refrigerador": 4,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 262
+  },
+  {
+    "nombre": "jitomate",
+    "sinonimos": [
+      "tomate"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 5,
+    "alacena": 10,
+    "congelador": null,
+    "foodkeeper": 600
+  },
+  {
+    "nombre": "cebolla",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 60,
+    "alacena": 30,
+    "congelador": 360,
+    "foodkeeper": 294
+  },
+  {
+    "nombre": "ajo",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": 30,
+    "congelador": 30,
+    "foodkeeper": 285
+  },
+  {
+    "nombre": "chile",
+    "sinonimos": [
+      "jalapeño",
+      "serrano",
+      "poblano"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 7,
+    "alacena": null,
+    "congelador": 270,
+    "foodkeeper": 548
+  },
+  {
+    "nombre": "pimiento",
+    "sinonimos": [
+      "morrón"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": null,
+    "congelador": 240,
+    "foodkeeper": 296
+  },
+  {
+    "nombre": "papa",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": 60,
+    "congelador": 360,
+    "foodkeeper": 297
+  },
+  {
+    "nombre": "zanahoria",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 21,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 279
+  },
+  {
+    "nombre": "calabacita",
+    "sinonimos": [
+      "calabacín"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 5,
+    "alacena": 5,
+    "congelador": 360,
+    "foodkeeper": 302
+  },
+  {
+    "nombre": "lechuga",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 290
+  },
+  {
+    "nombre": "espinaca",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 7,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 291
+  },
+  {
+    "nombre": "brócoli",
+    "sinonimos": [
+      "brocoli"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 276
+  },
+  {
+    "nombre": "coliflor",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 280
+  },
+  {
+    "nombre": "elote",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 2,
+    "alacena": null,
+    "congelador": 240,
+    "foodkeeper": 282
+  },
+  {
+    "nombre": "pepino",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 6,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 283
+  },
+  {
+    "nombre": "ejote",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 240,
+    "foodkeeper": 273
+  },
+  {
+    "nombre": "nopal",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": 5,
+    "congelador": 360,
+    "foodkeeper": 479
+  },
+  {
+    "nombre": "cilantro",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 21,
+    "alacena": 14,
+    "congelador": null,
+    "foodkeeper": 506
+  },
+  {
+    "nombre": "perejil",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 3,
+    "alacena": null,
+    "congelador": 120,
+    "foodkeeper": 611
+  },
+  {
+    "nombre": "apio",
+    "sinonimos": [],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 281
+  },
+  {
+    "nombre": "col",
+    "sinonimos": [
+      "repollo"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 14,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 278
+  },
+  {
+    "nombre": "champiñón",
+    "sinonimos": [
+      "champiñones",
+      "hongos"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 7,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 292
+  },
+  {
+    "nombre": "jícama",
+    "sinonimos": [
+      "jicama"
+    ],
+    "categoria": "verduras",
+    "refrigerador": 21,
+    "alacena": 120,
+    "congelador": null,
+    "foodkeeper": 492
+  },
+  {
+    "nombre": "huevo",
+    "sinonimos": [],
+    "categoria": "lacteos",
+    "refrigerador": 35,
+    "alacena": null,
+    "congelador": null,
+    "foodkeeper": 21
+  },
+  {
+    "nombre": "res",
+    "sinonimos": [
+      "bistec",
+      "carne de res"
+    ],
+    "categoria": "carnes",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 40
+  },
+  {
+    "nombre": "cerdo",
+    "sinonimos": [
+      "puerco",
+      "chuleta"
+    ],
+    "categoria": "carnes",
+    "refrigerador": 5,
+    "alacena": null,
+    "congelador": 360,
+    "foodkeeper": 63
+  },
+  {
+    "nombre": "pollo",
+    "sinonimos": [
+      "pechuga",
+      "muslo"
+    ],
+    "categoria": "carnes",
+    "refrigerador": 2,
+    "alacena": null,
+    "congelador": 270,
+    "foodkeeper": 116
+  },
+  {
+    "nombre": "pescado",
+    "sinonimos": [
+      "filete de pescado",
+      "tilapia",
+      "salmón"
+    ],
+    "categoria": "carnes",
+    "refrigerador": 2,
+    "alacena": null,
+    "congelador": 240,
+    "foodkeeper": 144
+  },
+  {
+    "nombre": "chorizo",
+    "sinonimos": [],
+    "categoria": "carnes",
+    "refrigerador": 2,
+    "alacena": null,
+    "congelador": 60,
+    "foodkeeper": 630
+  },
+  {
+    "nombre": "pan",
+    "sinonimos": [
+      "bolillo",
+      "telera",
+      "pan dulce"
+    ],
+    "categoria": "granos",
+    "refrigerador": null,
+    "alacena": 5,
+    "congelador": null,
+    "foodkeeper": 574
+  }
+]
