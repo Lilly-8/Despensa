@@ -20,6 +20,7 @@ import {
 import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/fechas';
 import { normalizarTexto } from '../lib/texto';
 import { pedirPermisoNotificaciones, reprogramarAvisos } from '../lib/notificaciones';
+import { sugerirFecha } from '../lib/vidaUtil';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
 
@@ -55,8 +56,16 @@ export default function ProductoScreen({ navigation, route }: any) {
   const avisoCodigo: string | undefined = route.params?.avisoCodigo;
   const desdeCache: boolean = route.params?.desdeCache || false; // el nombre ya se conocía
 
+  // Fecha sugerida (tabla de FoodKeeper): solo al agregar a mano o desde la
+  // lista de compras. Al editar no se toca, y lo escaneado trae fecha impresa.
+  const puedeSugerir = !id && !codigoBarras;
+  const sugerenciaInicial = puedeSugerir ? sugerirFecha(nombreInicial, ubicacionInicial) : null;
+
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [productoOriginal, setProductoOriginal] = useState<Producto | null>(null);
+  // true = la fecha la puso la app; false = la eligió el usuario
+  const [fechaEstimada, setFechaEstimada] = useState(!!sugerenciaInicial?.fecha);
+  const [notaFecha, setNotaFecha] = useState(sugerenciaInicial?.nota || '');
 
   const form = useForm<ProductoForm>({
     initialValues: {
@@ -65,7 +74,7 @@ export default function ProductoScreen({ navigation, route }: any) {
       unidad: unidadInicial,
       categoria: categoriaInicial,
       ubicacion: ubicacionInicial,
-      fechaCaducidad: '',
+      fechaCaducidad: sugerenciaInicial?.fecha || '',
     },
     validate: (values) => {
       const errors: Partial<Record<keyof ProductoForm, string>> = {};
@@ -95,6 +104,7 @@ export default function ProductoScreen({ navigation, route }: any) {
             unidad: values.unidad,
             ubicacion: values.ubicacion,
             fechaCaducidad: values.fechaCaducidad,
+            fechaEstimada: fechaEstimada,
           });
 
           await reprogramarAvisos();
@@ -107,7 +117,7 @@ export default function ProductoScreen({ navigation, route }: any) {
             unidad: values.unidad,
             ubicacion: values.ubicacion,
             fechaCaducidad: values.fechaCaducidad,
-            fechaEstimada: false,
+            fechaEstimada: fechaEstimada,
             codigoBarras: codigoBarras,
             estado: 'activo',
             creadoEn: new Date().toISOString(),
@@ -160,6 +170,45 @@ export default function ProductoScreen({ navigation, route }: any) {
     form.handleChange('categoria')(producto.categoria);
     form.handleChange('ubicacion')(producto.ubicacion);
     form.handleChange('fechaCaducidad')(producto.fechaCaducidad);
+    setFechaEstimada(producto.fechaEstimada);
+  };
+
+  // Vuelve a calcular la fecha sugerida con el nombre y la ubicación actuales.
+  // No toca una fecha que el usuario eligió él mismo.
+  const actualizarSugerencia = (nombre: string, ubicacion: ProductoForm['ubicacion']) => {
+    if (!puedeSugerir) return;
+    if (form.values.fechaCaducidad && !fechaEstimada) return;
+
+    const sugerencia = sugerirFecha(nombre, ubicacion);
+    if (!sugerencia) {
+      // Ya no coincide con nada: quitar la fecha que había puesto la app
+      if (fechaEstimada) form.handleChange('fechaCaducidad')('');
+      setFechaEstimada(false);
+      setNotaFecha('');
+      return;
+    }
+
+    // Si no hay dato para esa ubicación, fecha vacía y la nota dice dónde sí hay
+    form.handleChange('fechaCaducidad')(sugerencia.fecha);
+    setFechaEstimada(sugerencia.fecha !== '');
+    setNotaFecha(sugerencia.nota);
+  };
+
+  const cambiarNombre = (nombre: string) => {
+    form.handleChange('nombre')(nombre);
+    actualizarSugerencia(nombre, form.values.ubicacion);
+  };
+
+  const cambiarUbicacion = (ubicacion: ProductoForm['ubicacion']) => {
+    form.handleChange('ubicacion')(ubicacion);
+    actualizarSugerencia(form.values.nombre, ubicacion);
+  };
+
+  // Fecha elegida por el usuario (calendario o atajos): deja de ser estimada
+  const elegirFecha = (fecha: string) => {
+    form.handleChange('fechaCaducidad')(fecha);
+    setFechaEstimada(false);
+    setNotaFecha('');
   };
 
   useEffect(() => {
@@ -302,7 +351,7 @@ export default function ProductoScreen({ navigation, route }: any) {
         <CampoTexto
           etiqueta="Nombre"
           value={form.values.nombre}
-          onChangeText={form.handleChange('nombre')}
+          onChangeText={cambiarNombre}
           onBlur={form.handleBlur('nombre')}
           placeholder="Leche, jitomate, arroz..."
           error={form.touched.nombre ? form.errors.nombre : undefined}
@@ -330,6 +379,7 @@ export default function ProductoScreen({ navigation, route }: any) {
           <Ionicons name="calendar-outline" size={20} color={colores.primario} />
         </TouchableOpacity>
         {errorFecha ? <Text style={styles.textoError}>{errorFecha}</Text> : null}
+        {notaFecha ? <Text style={styles.notaFecha}>{notaFecha}</Text> : null}
 
         {mostrarCalendario ? (
           <DateTimePicker
@@ -344,7 +394,7 @@ export default function ProductoScreen({ navigation, route }: any) {
             locale="es-MX"
             onValueChange={(evento, fecha) => {
               setMostrarCalendario(false);
-              form.handleChange('fechaCaducidad')(fechaATexto(fecha));
+              elegirFecha(fechaATexto(fecha));
             }}
             onDismiss={() => setMostrarCalendario(false)}
           />
@@ -358,7 +408,7 @@ export default function ProductoScreen({ navigation, route }: any) {
                 key={atajo.texto}
                 texto={atajo.texto}
                 seleccionado={form.values.fechaCaducidad === fechaAtajo}
-                onPress={() => form.handleChange('fechaCaducidad')(fechaAtajo)}
+                onPress={() => elegirFecha(fechaAtajo)}
               />
             );
           })}
@@ -395,7 +445,7 @@ export default function ProductoScreen({ navigation, route }: any) {
               key={opcion.valor}
               texto={opcion.texto}
               seleccionado={form.values.ubicacion === opcion.valor}
-              onPress={() => form.handleChange('ubicacion')(opcion.valor)}
+              onPress={() => cambiarUbicacion(opcion.valor as ProductoForm['ubicacion'])}
             />
           ))}
         </View>
@@ -466,6 +516,13 @@ const styles = StyleSheet.create({
   textoError: {
     fontSize: 13,
     color: colores.urgente,
+    marginBottom: espacios.s,
+  },
+  // Nota de la fecha sugerida, debajo del selector
+  notaFecha: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: colores.textoSuave,
     marginBottom: espacios.s,
   },
   // Aviso del escáner: borde fino con barra mostaza a la izquierda

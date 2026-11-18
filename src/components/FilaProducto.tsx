@@ -49,7 +49,11 @@ const FilaProducto = memo(({ producto, onPress }: FilaProductoProps) => {
           {tieneFecha ? textoDias(dias) : 'Sin fecha'}
         </Text>
         {tieneFecha ? (
-          <Text style={styles.fecha}>{formatoMexico(producto.fechaCaducidad)}</Text>
+          <Text style={styles.fecha}>
+            {formatoMexico(producto.fechaCaducidad)}
+            {/* La puso la app (tabla de vida útil), no viene impresa */}
+            {producto.fechaEstimada ? ' · estimada' : ''}
+          </Text>
         ) : null}
       </View>
     </TouchableOpacity>
