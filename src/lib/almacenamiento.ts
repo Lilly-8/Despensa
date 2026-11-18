@@ -13,6 +13,7 @@ export interface Producto {
   notificacionId?: string; 
   estado: 'activo' | 'consumido' | 'tirado';
   creadoEn: string;
+  fechaSalida?: string; // 'YYYY-MM-DD', cuándo se marcó como consumido o tirado
 }
 
 const CLAVE_PRODUCTOS = 'productos';
@@ -140,4 +141,57 @@ export async function eliminarItemCompra(id: string): Promise<void> {
   const items = await leerListaCompras();
   const nuevos = items.filter((i) => i.id !== id);
   await guardarListaCompras(nuevos);
+}
+
+// Caché de códigos de barras
+// Un objeto código → datos del producto:
+// { "7501020515343": { nombre: "Leche Lala entera", categoria: "lacteos", ... } }
+// Un código no cambia, así que lo aprendido una vez sirve siempre: el segundo
+// escaneo es instantáneo, funciona sin internet y recuerda lo que eligió el
+// usuario (nombre, categoría, ubicación y unidad), aunque el producto no esté
+// en Open Food Facts.
+
+// Lo que se sabe de un código. Solo el nombre es seguro; lo demás puede faltar.
+export interface DatosCodigo {
+  nombre: string;
+  categoria?: string;
+  ubicacion?: 'refrigerador' | 'congelador' | 'alacena';
+  unidad?: string;
+}
+
+const CLAVE_CACHE_CODIGOS = 'cache_codigos';
+
+// Las versiones anteriores guardaban solo el nombre como texto
+// ({ "750...": "Leche" }); por eso cada valor puede ser texto u objeto.
+async function leerCacheCodigos(): Promise<Record<string, DatosCodigo | string>> {
+  try {
+    const texto = await AsyncStorage.getItem(CLAVE_CACHE_CODIGOS);
+    return JSON.parse(texto || '{}');
+  } catch (error) {
+    console.error('Error al leer la caché de códigos:', error);
+    return {};
+  }
+}
+
+// Los datos guardados para ese código, o null si nunca se ha visto.
+export async function leerDatosDeCodigo(codigo: string): Promise<DatosCodigo | null> {
+  const cache = await leerCacheCodigos();
+  const guardado = cache[codigo];
+  if (!guardado) return null;
+  // Formato viejo: solo el nombre
+  if (typeof guardado === 'string') return { nombre: guardado };
+  return guardado.nombre ? guardado : null;
+}
+
+// Guarda (o reemplaza) los datos de un código.
+// Si falla no pasa nada grave: la próxima vez se vuelve a buscar.
+export async function guardarDatosDeCodigo(codigo: string, datos: DatosCodigo): Promise<void> {
+  if (!codigo || !datos.nombre.trim()) return;
+  try {
+    const cache = await leerCacheCodigos();
+    cache[codigo] = { ...datos, nombre: datos.nombre.trim() };
+    await AsyncStorage.setItem(CLAVE_CACHE_CODIGOS, JSON.stringify(cache));
+  } catch (error) {
+    console.error('Error al guardar la caché de códigos:', error);
+  }
 }

@@ -13,6 +13,7 @@ import ComprasScreen from './src/screens/ComprasScreen';
 import ProductoScreen from './src/screens/ProductoScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
 import RecetaScreen from './src/screens/RecetaScreen';
+import EscanerScreen from './src/screens/EscanerScreen';
 import { Receta } from './src/lib/recetas';
 import { colores, bordes } from './src/constants/colores';
 import { configurarNotificaciones } from './src/lib/notificaciones';
@@ -27,7 +28,8 @@ type TabParamList = {
 type RootStackParamList = {
   MainTabs: undefined;
   // id = editar un producto. itemCompraId + nombre/cantidad/unidad = pasar
-  // un item de la lista de compras a la despensa. Sin nada = agregar uno nuevo.
+  // un item de la lista de compras a la despensa. codigoBarras (+ nombre o
+  // avisoCodigo) = viene del escáner. Sin nada = agregar uno nuevo.
   Producto:
     | {
         id?: string;
@@ -35,10 +37,16 @@ type RootStackParamList = {
         nombre?: string;
         cantidad?: number;
         unidad?: string;
+        categoria?: string;
+        ubicacion?: 'refrigerador' | 'congelador' | 'alacena';
+        codigoBarras?: string;
+        avisoCodigo?: string;
+        desdeCache?: boolean; // el nombre salió de cache_codigos
       }
     | undefined;
   Ajustes: undefined;
   Receta: { receta: Receta }; // la receta completa, desde RecetasScreen
+  Escaner: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -141,6 +149,17 @@ export default function App() {
             component={RecetaScreen}
             options={{
               title: 'Receta', // el título largo va dentro de la pantalla
+              headerStyle: { backgroundColor: colores.fondo },
+              headerTintColor: colores.primario,
+              headerTitleStyle: { color: colores.texto },
+              headerShadowVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="Escaner"
+            component={EscanerScreen}
+            options={{
+              title: 'Escanear código',
               headerStyle: { backgroundColor: colores.fondo },
               headerTintColor: colores.primario,
               headerTitleStyle: { color: colores.texto },

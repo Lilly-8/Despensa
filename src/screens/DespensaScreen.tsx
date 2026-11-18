@@ -148,6 +148,14 @@ export default function DespensaScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       />
 
+      {/* Escanear: encima del +, con contorno para que el + siga siendo el principal */}
+      <TouchableOpacity
+        style={styles.botonEscanear}
+        onPress={() => navigation.navigate('Escaner')}
+      >
+        <Ionicons name="barcode-outline" size={26} color={colores.primario} />
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.botonAgregar}
         onPress={() => navigation.navigate('Producto')}
@@ -178,7 +186,8 @@ const styles = StyleSheet.create({
     gap: espacios.s,
   },
   lista: {
-    paddingBottom: espacios.xxl * 2,
+    // Espacio para que los dos botones flotantes no tapen el último producto
+    paddingBottom: espacios.xxl * 3 + espacios.m,
   },
   separador: {
     height: bordes.grosor,
@@ -205,6 +214,20 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: bordes.radio,
     backgroundColor: colores.primario,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Mismo tamaño que el +, justo encima, con borde fino en lugar de relleno
+  botonEscanear: {
+    position: 'absolute',
+    right: espacios.l,
+    bottom: espacios.l + 56 + espacios.s,
+    width: 56,
+    height: 56,
+    borderRadius: bordes.radio,
+    borderWidth: bordes.grosor,
+    borderColor: colores.primario,
+    backgroundColor: colores.fondo,
     alignItems: 'center',
     justifyContent: 'center',
   },

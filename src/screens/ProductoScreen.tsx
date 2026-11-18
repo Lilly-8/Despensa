@@ -13,6 +13,7 @@ import {
   eliminarItemCompra,
   leerListaCompras,
   eliminarProducto,
+  guardarDatosDeCodigo,
   obtenerProducto,
   Producto,
 } from '../lib/almacenamiento';
@@ -46,6 +47,13 @@ export default function ProductoScreen({ navigation, route }: any) {
   const nombreInicial = route.params?.nombre || '';
   const cantidadInicial = route.params?.cantidad ? String(route.params.cantidad) : '1';
   const unidadInicial = route.params?.unidad || 'pza';
+  // Del escáner: lo que sugirió Open Food Facts o lo que se eligió la última vez
+  const categoriaInicial = route.params?.categoria || 'otros';
+  const ubicacionInicial = route.params?.ubicacion || 'alacena';
+  // Si viene del escáner: el código leído y, si no se encontró el nombre, por qué
+  const codigoBarras: string | undefined = route.params?.codigoBarras;
+  const avisoCodigo: string | undefined = route.params?.avisoCodigo;
+  const desdeCache: boolean = route.params?.desdeCache || false; // el nombre ya se conocía
 
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [productoOriginal, setProductoOriginal] = useState<Producto | null>(null);
@@ -55,8 +63,8 @@ export default function ProductoScreen({ navigation, route }: any) {
       nombre: nombreInicial,
       cantidad: cantidadInicial,
       unidad: unidadInicial,
-      categoria: 'otros',
-      ubicacion: 'alacena',
+      categoria: categoriaInicial,
+      ubicacion: ubicacionInicial,
       fechaCaducidad: '',
     },
     validate: (values) => {
@@ -100,6 +108,7 @@ export default function ProductoScreen({ navigation, route }: any) {
             ubicacion: values.ubicacion,
             fechaCaducidad: values.fechaCaducidad,
             fechaEstimada: false,
+            codigoBarras: codigoBarras,
             estado: 'activo',
             creadoEn: new Date().toISOString(),
           };
@@ -114,6 +123,20 @@ export default function ProductoScreen({ navigation, route }: any) {
             await eliminarItemCompra(itemCompraId);
           }
         }
+
+        // Si tiene código de barras (recién escaneado o al editar uno que ya lo
+        // tenía), la caché se queda con lo que el usuario guardó, aunque lo
+        // haya corregido: la próxima vez que lo escanee se llena igual
+        const codigo = codigoBarras || productoOriginal?.codigoBarras;
+        if (codigo) {
+          await guardarDatosDeCodigo(codigo, {
+            nombre: values.nombre,
+            categoria: values.categoria,
+            ubicacion: values.ubicacion,
+            unidad: values.unidad,
+          });
+        }
+
         navigation.goBack();
       } catch (error) {
         Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
@@ -165,7 +188,8 @@ export default function ProductoScreen({ navigation, route }: any) {
     if (!productoOriginal) return;
 
     try {
-      await actualizarProducto({ ...productoOriginal, estado: estado });
+      // fechaSalida: para el resumen del mes en Inicio
+      await actualizarProducto({ ...productoOriginal, estado: estado, fechaSalida: hoy() });
       await reprogramarAvisos();
     } catch (error) {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
@@ -259,6 +283,22 @@ export default function ProductoScreen({ navigation, route }: any) {
         contentContainerStyle={styles.contenido}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Viene del escáner sin nombre: decir por qué hay que escribirlo */}
+        {codigoBarras && avisoCodigo ? (
+          <View style={styles.avisoCodigo}>
+            <Text style={styles.avisoCodigoTexto}>{avisoCodigo}</Text>
+            <Text style={styles.codigoTexto}>Código {codigoBarras}</Text>
+          </View>
+        ) : null}
+
+        {/* Viene del escáner con nombre: de dónde salió, discreto */}
+        {codigoBarras && !avisoCodigo ? (
+          <Text style={styles.codigoTexto}>
+            Código {codigoBarras} ·{' '}
+            {desdeCache ? 'Ya lo habías escaneado' : 'Datos de Open Food Facts'}
+          </Text>
+        ) : null}
+
         <CampoTexto
           etiqueta="Nombre"
           value={form.values.nombre}
@@ -427,6 +467,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colores.urgente,
     marginBottom: espacios.s,
+  },
+  // Aviso del escáner: borde fino con barra mostaza a la izquierda
+  avisoCodigo: {
+    padding: espacios.m,
+    marginBottom: espacios.l,
+    borderWidth: bordes.grosor,
+    borderColor: colores.borde,
+    borderRadius: bordes.radio,
+    borderLeftWidth: 3,
+    borderLeftColor: colores.pronto,
+    gap: espacios.xs,
+  },
+  avisoCodigoTexto: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colores.texto,
+  },
+  codigoTexto: {
+    fontSize: 13,
+    color: colores.textoSuave,
+    marginBottom: espacios.m,
   },
   acciones: {
     marginTop: espacios.xl,
