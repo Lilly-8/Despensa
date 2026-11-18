@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import FilaProducto from '../components/FilaProducto';
 import { leerProductos, Producto } from '../lib/almacenamiento';
-import { diasRestantes, nivelUrgencia } from '../lib/fechas';
+import { diasRestantes, hoy, nivelUrgencia } from '../lib/fechas';
 import { colores, espacios, bordes } from '../constants/colores';
 
 const DIAS_PRONTO = 30;
@@ -18,6 +18,7 @@ interface SeccionUrgencia {
 
 // Las secciones vacías no se muestran.
 function armarSecciones(productos: Producto[]): SeccionUrgencia[] {
+  const caducados: Producto[] = [];
   const urgentes: Producto[] = [];
   const pronto: Producto[] = [];
   const tranquilos: Producto[] = [];
@@ -28,7 +29,13 @@ function armarSecciones(productos: Producto[]): SeccionUrgencia[] {
 
   for (const producto of conFecha) {
     const dias = diasRestantes(producto.fechaCaducidad);
-    if (dias > DIAS_PRONTO) continue; 
+    if (dias > DIAS_PRONTO) continue;
+
+    // Ya no se pueden usar: van aparte, no en "Úsalo ya"
+    if (dias < 0) {
+      caducados.push(producto);
+      continue;
+    }
 
     const nivel = nivelUrgencia(dias);
     if (nivel === 'urgente') urgentes.push(producto);
@@ -37,6 +44,8 @@ function armarSecciones(productos: Producto[]): SeccionUrgencia[] {
   }
 
   const secciones: SeccionUrgencia[] = [
+    // Primero, para que se marquen como tirados y salgan de la despensa
+    { titulo: 'Ya caducaron', color: colores.textoSuave, data: caducados },
     { titulo: 'Úsalo ya · 3 días o menos', color: colores.urgente, data: urgentes },
     { titulo: 'Esta semana · 7 días o menos', color: colores.pronto, data: pronto },
     { titulo: 'Este mes', color: colores.tranquilo, data: tranquilos },
@@ -45,12 +54,40 @@ function armarSecciones(productos: Producto[]): SeccionUrgencia[] {
   return secciones.filter((s) => s.data.length > 0);
 }
 
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+interface ResumenMes {
+  aprovechados: number;
+  tirados: number;
+}
+
+// Cuántos productos se marcaron este mes como "Me lo comí" y "Lo tiré".
+// Los que se marcaron antes de guardar fechaSalida no cuentan.
+function resumenDelMes(productos: Producto[]): ResumenMes {
+  const mesActual = hoy().slice(0, 7); // 'YYYY-MM'
+  let aprovechados = 0;
+  let tirados = 0;
+
+  for (const producto of productos) {
+    if (!producto.fechaSalida || producto.fechaSalida.slice(0, 7) !== mesActual) continue;
+    if (producto.estado === 'consumido') aprovechados++;
+    else if (producto.estado === 'tirado') tirados++;
+  }
+
+  return { aprovechados, tirados };
+}
+
 export default function InicioScreen({ navigation }: any) {
   const [secciones, setSecciones] = useState<SeccionUrgencia[]>([]);
+  const [resumen, setResumen] = useState<ResumenMes>({ aprovechados: 0, tirados: 0 });
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
     setSecciones(armarSecciones(guardados));
+    setResumen(resumenDelMes(guardados));
   };
 
   useEffect(() => {
@@ -102,6 +139,39 @@ export default function InicioScreen({ navigation }: any) {
             >
               <Ionicons name="settings-outline" size={24} color={colores.primario} />
             </TouchableOpacity>
+
+            {/* Resumen del mes: lo que se aprovechó y lo que se tiró */}
+            <View style={styles.resumen}>
+              <Text style={styles.resumenMes}>{MESES[new Date().getMonth()]}</Text>
+              {resumen.aprovechados + resumen.tirados === 0 ? (
+                <Text style={styles.resumenVacio}>
+                  Cuando marques productos como comidos o tirados, aquí verás tu resumen del mes.
+                </Text>
+              ) : (
+                <View>
+                  <View style={styles.resumenNumeros}>
+                    <View style={styles.resumenDato}>
+                      <Text style={styles.resumenNumero}>{resumen.aprovechados}</Text>
+                      <Text style={styles.resumenEtiqueta}>
+                        {resumen.aprovechados === 1 ? 'aprovechado' : 'aprovechados'}
+                      </Text>
+                    </View>
+                    <View style={[styles.resumenDato, styles.resumenDatoDerecho]}>
+                      <Text style={styles.resumenNumero}>{resumen.tirados}</Text>
+                      <Text style={styles.resumenEtiqueta}>
+                        {resumen.tirados === 1 ? 'tirado' : 'tirados'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Barra de proporción: cada parte crece según su número */}
+                  <View style={styles.barra}>
+                    <View style={[styles.barraAprovechados, { flex: resumen.aprovechados }]} />
+                    <View style={[styles.barraTirados, { flex: resumen.tirados }]} />
+                  </View>
+                </View>
+              )}
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -133,6 +203,58 @@ const styles = StyleSheet.create({
   },
   lista: {
     paddingBottom: espacios.xl,
+  },
+  // Resumen del mes: franja con borde fino abajo (el de arriba es el del Encabezado)
+  resumen: {
+    paddingVertical: espacios.m,
+    borderBottomWidth: bordes.grosor,
+    borderBottomColor: colores.borde,
+  },
+  resumenMes: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colores.texto,
+    marginBottom: espacios.s,
+  },
+  resumenVacio: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colores.textoSuave,
+  },
+  resumenNumeros: {
+    flexDirection: 'row',
+  },
+  resumenDato: {
+    paddingRight: espacios.l,
+  },
+  resumenDatoDerecho: {
+    paddingLeft: espacios.l,
+    borderLeftWidth: bordes.grosor,
+    borderLeftColor: colores.borde,
+  },
+  resumenNumero: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colores.texto,
+  },
+  resumenEtiqueta: {
+    fontSize: 14,
+    color: colores.textoSuave,
+  },
+  barra: {
+    flexDirection: 'row',
+    height: 6,
+    marginTop: espacios.m,
+    borderRadius: bordes.radio / 2,
+    overflow: 'hidden',
+  },
+  barraAprovechados: {
+    backgroundColor: colores.primario,
+  },
+  barraTirados: {
+    backgroundColor: colores.urgente,
   },
   seccion: {
     flexDirection: 'row',
