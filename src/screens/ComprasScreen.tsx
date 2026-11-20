@@ -200,9 +200,21 @@ export default function ComprasScreen({ navigation }: any) {
         sections={secciones}
         renderItem={renderItem}
         renderSectionHeader={({ section }) => (
-          <Text style={styles.seccionTitulo}>
-            {section.titulo} · {section.data.length}
-          </Text>
+          <View style={styles.seccion}>
+            <Text style={styles.seccionTitulo}>
+              {section.titulo} · {section.data.length}
+            </Text>
+            {/* En los comprados: pasarlos todos de una vez a la despensa */}
+            {section.titulo === 'Comprados' ? (
+              <TouchableOpacity
+                style={styles.pasarTodo}
+                onPress={() => navigation.navigate('PasarDespensa')}
+              >
+                <Ionicons name="file-tray-stacked-outline" size={16} color={colores.primario} />
+                <Text style={styles.pasarTodoTexto}>Pasar todo a la despensa</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         )}
         stickySectionHeadersEnabled={false}
         keyExtractor={(item) => item.id}
@@ -265,16 +277,32 @@ const styles = StyleSheet.create({
     color: colores.textoSuave,
     textDecorationLine: 'line-through',
   },
+  // Encabezado de sección: título a la izquierda y, en Comprados, la acción a la derecha
+  seccion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: espacios.l,
+    paddingBottom: espacios.s,
+    borderBottomWidth: bordes.grosor,
+    borderBottomColor: colores.borde,
+  },
   seccionTitulo: {
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: colores.texto,
-    paddingTop: espacios.l,
-    paddingBottom: espacios.s,
-    borderBottomWidth: bordes.grosor,
-    borderBottomColor: colores.borde,
+  },
+  pasarTodo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.xs,
+  },
+  pasarTodoTexto: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colores.primario,
   },
   cantidad: {
     fontSize: 14,

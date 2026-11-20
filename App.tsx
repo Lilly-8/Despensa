@@ -14,6 +14,7 @@ import ProductoScreen from './src/screens/ProductoScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
 import RecetaScreen from './src/screens/RecetaScreen';
 import EscanerScreen from './src/screens/EscanerScreen';
+import PasarDespensaScreen from './src/screens/PasarDespensaScreen';
 import { Receta } from './src/lib/recetas';
 import { colores, bordes } from './src/constants/colores';
 import { configurarNotificaciones } from './src/lib/notificaciones';
@@ -47,6 +48,7 @@ type RootStackParamList = {
   Ajustes: undefined;
   Receta: { receta: Receta }; // la receta completa, desde RecetasScreen
   Escaner: undefined;
+  PasarDespensa: undefined; // revisión de los comprados, desde Compras
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -160,6 +162,17 @@ export default function App() {
             component={EscanerScreen}
             options={{
               title: 'Escanear código',
+              headerStyle: { backgroundColor: colores.fondo },
+              headerTintColor: colores.primario,
+              headerTitleStyle: { color: colores.texto },
+              headerShadowVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="PasarDespensa"
+            component={PasarDespensaScreen}
+            options={{
+              title: 'Pasar a la despensa',
               headerStyle: { backgroundColor: colores.fondo },
               headerTintColor: colores.primario,
               headerTitleStyle: { color: colores.texto },

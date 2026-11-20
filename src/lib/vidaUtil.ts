@@ -78,6 +78,36 @@ export interface SugerenciaFecha {
   nota: string; // texto para mostrar debajo de la fecha
 }
 
+export interface DatosSugeridos {
+  categoria: string;
+  ubicacion: Ubicacion;
+  fecha: string; // '' si no hay dato
+}
+
+// Para pasar varios productos de golpe (desde Compras): categoría, ubicación y
+// fecha a partir del nombre. La ubicación es donde el alimento dura más
+// (sin contar el congelador): jitomate → alacena (10 días contra 5 en el refri).
+// Si no está en la tabla: "otros", alacena y sin fecha.
+export function sugerirDatos(nombre: string): DatosSugeridos {
+  const alimento = buscarVidaUtil(nombre);
+  if (!alimento) return { categoria: 'otros', ubicacion: 'alacena', fecha: '' };
+
+  let ubicacion: Ubicacion = 'alacena';
+  if (
+    alimento.refrigerador !== null &&
+    (alimento.alacena === null || alimento.refrigerador >= alimento.alacena)
+  ) {
+    ubicacion = 'refrigerador';
+  }
+
+  const sugerencia = sugerirFecha(nombre, ubicacion);
+  return {
+    categoria: alimento.categoria,
+    ubicacion: ubicacion,
+    fecha: sugerencia ? sugerencia.fecha : '',
+  };
+}
+
 // Fecha sugerida para un producto según dónde se guarda.
 // null = el alimento no está en la tabla.
 export function sugerirFecha(nombre: string, ubicacion: Ubicacion): SugerenciaFecha | null {
