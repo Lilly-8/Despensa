@@ -12,6 +12,7 @@ import {
 import { formatoMexico } from '../lib/fechas';
 import { pedirPermisoNotificaciones, reprogramarAvisos } from '../lib/notificaciones';
 import { DatosSugeridos, sugerirDatos } from '../lib/vidaUtil';
+import { esDemo } from '../lib/demo';
 import { UBICACIONES } from '../constants/opciones';
 import { colores, espacios, bordes } from '../constants/colores';
 
@@ -74,8 +75,9 @@ export default function PasarDespensaScreen({ navigation }: any) {
       let numero = 0;
       for (const revision of conFecha) {
         productos.push({
-          // Date.now() solo no basta: todos se crean en el mismo milisegundo
-          id: ahora + '-' + numero,
+          // Date.now() solo no basta: todos se crean en el mismo milisegundo.
+          // Si el comprado era de ejemplo, el producto también ("demo-…").
+          id: (esDemo(revision.item.id) ? 'demo-' : '') + ahora + '-' + numero,
           nombre: revision.item.nombre,
           categoria: revision.datos.categoria,
           cantidad: revision.item.cantidad,

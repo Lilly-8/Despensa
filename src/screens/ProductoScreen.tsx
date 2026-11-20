@@ -21,6 +21,7 @@ import { fechaATexto, textoAFecha, hoy, sumarDias, formatoMexico } from '../lib/
 import { normalizarTexto } from '../lib/texto';
 import { pedirPermisoNotificaciones, reprogramarAvisos } from '../lib/notificaciones';
 import { sugerirFecha } from '../lib/vidaUtil';
+import { esDemo } from '../lib/demo';
 import { colores, espacios, bordes } from '../constants/colores';
 import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
 
@@ -110,7 +111,9 @@ export default function ProductoScreen({ navigation, route }: any) {
           await reprogramarAvisos();
         } else {
           const nuevo: Producto = {
-            id: Date.now().toString(),
+            // Si viene de un comprado de ejemplo, también es de ejemplo ("demo-…"),
+            // para que "Borrar datos de demostración" lo quite
+            id: (itemCompraId && esDemo(itemCompraId) ? 'demo-' : '') + Date.now(),
             nombre: values.nombre.trim(),
             categoria: values.categoria,
             cantidad: cantidad,

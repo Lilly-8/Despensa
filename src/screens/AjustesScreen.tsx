@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ChipFiltro from '../components/ChipFiltro';
 import Boton from '../components/Boton';
 import { AJUSTES_POR_DEFECTO, guardarAjustes, leerAjustes } from '../lib/almacenamiento';
+import { borrarDatosDemo, cargarDatosDemo } from '../lib/demo';
 import { reprogramarAvisos, tienePermisoNotificaciones } from '../lib/notificaciones';
 import { colores, espacios, bordes } from '../constants/colores';
 
@@ -79,6 +80,57 @@ export default function AjustesScreen({ navigation }: any) {
     }
   };
 
+  // Para presentar la app: agrega datos de ejemplo junto a los tuyos
+  const confirmarDemo = () => {
+    Alert.alert(
+      'Cargar datos de demostración',
+      'Se agregarán productos y una lista de compras de ejemplo. Lo tuyo no se toca, y después puedes quitar solo los ejemplos.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cargar',
+          onPress: async () => {
+            try {
+              await cargarDatosDemo();
+              await reprogramarAvisos(); // avisos de los productos de ejemplo
+              Alert.alert('Listo', 'Se cargaron los datos de demostración.', [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            } catch (error) {
+              Alert.alert('No se pudieron cargar', 'Intenta de nuevo.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Quita solo lo de ejemplo; lo del usuario se queda
+  const confirmarBorrar = () => {
+    Alert.alert(
+      'Borrar datos de demostración',
+      'Se quitarán los productos y la lista de compras de ejemplo. Lo tuyo no se toca.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Borrar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await borrarDatosDemo();
+              await reprogramarAvisos(); // los avisos quedan solo con tus productos
+              Alert.alert('Listo', 'Se borraron los datos de demostración.', [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            } catch (error) {
+              Alert.alert('No se pudieron borrar', 'Intenta de nuevo.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ScrollView style={styles.contenedor} contentContainerStyle={styles.contenido}>
       {!hayPermiso ? (
@@ -133,6 +185,22 @@ export default function AjustesScreen({ navigation }: any) {
           texto={guardando ? 'Guardando...' : 'Guardar'}
           onPress={guardar}
           desactivado={guardando}
+        />
+      </View>
+
+      {/* Datos de la app: separados de los ajustes con un borde fino */}
+      <View style={styles.datos}>
+        <Text style={styles.etiqueta}>Datos de la app</Text>
+        <Text style={styles.datosTexto}>
+          Para presentar la app, agrega productos y una lista de compras de ejemplo. Se suman a
+          los tuyos, y al terminar puedes quitar solo los ejemplos.
+        </Text>
+        <Boton texto="Cargar datos de demostración" onPress={confirmarDemo} secundario />
+        <Boton
+          texto="Borrar datos de demostración"
+          onPress={confirmarBorrar}
+          secundario
+          peligro
         />
       </View>
     </ScrollView>
@@ -198,5 +266,18 @@ const styles = StyleSheet.create({
   },
   guardar: {
     marginTop: espacios.s,
+  },
+  datos: {
+    marginTop: espacios.xl,
+    paddingTop: espacios.l,
+    borderTopWidth: bordes.grosor,
+    borderTopColor: colores.borde,
+    gap: espacios.s,
+  },
+  datosTexto: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colores.textoSuave,
+    marginBottom: espacios.s,
   },
 });
