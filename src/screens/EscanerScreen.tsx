@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Linking, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  AppState,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import Boton from '../components/Boton';
@@ -134,12 +142,19 @@ export default function EscanerScreen({ navigation }: any) {
   // Con permiso: la cámara arriba y lo leído abajo
   return (
     <View style={styles.contenedor}>
-      <CameraView
-        style={styles.camara}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: TIPOS_DE_CODIGO }}
-        onBarcodeScanned={codigo ? undefined : leerCodigo}
-      />
+      <View style={styles.camaraZona}>
+        <CameraView
+          style={styles.camara}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: TIPOS_DE_CODIGO }}
+          onBarcodeScanned={codigo ? undefined : leerCodigo}
+        />
+        {/* Recuadro guía encima de la cámara: solo indica dónde poner el código.
+            pointerEvents="none" para que no tape los toques a la cámara. */}
+        <View style={styles.guia} pointerEvents="none">
+          <View style={styles.recuadro} />
+        </View>
+      </View>
 
       <View style={styles.panel}>
         {codigo ? (
@@ -157,6 +172,11 @@ export default function EscanerScreen({ navigation }: any) {
             <Text style={styles.panelTexto}>
               Apunta la cámara al código de barras del producto.
             </Text>
+            {/* Por si el código no se lee (borroso, dañado o sin código) */}
+            <TouchableOpacity style={styles.aMano} onPress={escribirAMano}>
+              <Ionicons name="create-outline" size={18} color={colores.primario} />
+              <Text style={styles.aManoTexto}>Escribir a mano</Text>
+            </TouchableOpacity>
           </View>
         )}
         <Text style={styles.fuente}>Datos de Open Food Facts</Text>
@@ -170,8 +190,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colores.fondo,
   },
-  camara: {
+  // La cámara y el recuadro guía ocupan el mismo espacio, uno encima del otro
+  camaraZona: {
     flex: 1,
+  },
+  // position absolute con las cuatro orillas en 0: ocupa toda la zona
+  camara: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  guia: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Ancho y bajo, con la forma de un código de barras
+  recuadro: {
+    width: '80%',
+    height: 140,
+    borderWidth: 2,
+    borderColor: colores.textoSobrePrimario,
+    borderRadius: bordes.radio,
+  },
+  aMano: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.xs,
+    marginTop: espacios.m,
+    paddingVertical: espacios.xs,
+  },
+  aManoTexto: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colores.primario,
   },
   panel: {
     padding: espacios.l,
