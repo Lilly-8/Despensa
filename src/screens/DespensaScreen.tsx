@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BackHandler, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
@@ -8,6 +8,7 @@ import FilaProducto from '../components/FilaProducto';
 import ChipFiltro from '../components/ChipFiltro';
 import BarraSeleccion from '../components/BarraSeleccion';
 import Boton from '../components/Boton';
+import useSeleccion from '../hooks/useSeleccion';
 import { leerProductos, Producto } from '../lib/almacenamiento';
 import { grupoCaducidad } from '../lib/fechas';
 import { normalizarTexto } from '../lib/texto';
@@ -45,8 +46,7 @@ export default function DespensaScreen({ navigation, route }: any) {
   const [categoria, setCategoria] = useState(''); // '' = todas
   const [ubicacion, setUbicacion] = useState(''); // '' = todas
   const [panelVisible, setPanelVisible] = useState(false); // panel de filtros
-  const [seleccionados, setSeleccionados] = useState<string[]>([]); // ids marcados
-  const enSeleccion = seleccionados.length > 0;
+  const seleccion = useSeleccion(navigation); // selección múltiple (mantener pulsado)
 
   const textoBuscado = normalizarTexto(busqueda);
   const productosFiltrados = productos.filter(
@@ -74,7 +74,6 @@ export default function DespensaScreen({ navigation, route }: any) {
 
   useEffect(() => {
     const sub = navigation.addListener('focus', () => {
-      setSeleccionados([]);
       cargarProductos();
     });
 
@@ -104,31 +103,10 @@ export default function DespensaScreen({ navigation, route }: any) {
     }
   }, [urgenciaRecibida, navigation]);
 
-  // Android: el botón de atrás quita la selección en vez de salir de la pantalla
-  useEffect(() => {
-    if (!enSeleccion) return;
-
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      setSeleccionados([]);
-      return true; // ya se manejó: no regresa ni cierra la app
-    });
-
-    return () => sub.remove();
-  }, [enSeleccion]);
-
-  // Marca o desmarca un producto
-  const alternarSeleccion = (id: string) => {
-    if (seleccionados.includes(id)) {
-      setSeleccionados(seleccionados.filter((s) => s !== id));
-    } else {
-      setSeleccionados([...seleccionados, id]);
-    }
-  };
-
   // En modo selección, tocar marca o desmarca; si no, abre el producto
   const tocarProducto = (producto: Producto) => {
-    if (enSeleccion) {
-      alternarSeleccion(producto.id);
+    if (seleccion.enSeleccion) {
+      seleccion.alternar(producto.id);
     } else {
       navigation.navigate('Producto', { id: producto.id });
     }
@@ -137,12 +115,12 @@ export default function DespensaScreen({ navigation, route }: any) {
   // Al buscar o filtrar se borra la selección, para no actuar sobre algo que ya no se ve
   const cambiarBusqueda = (texto: string) => {
     setBusqueda(texto);
-    setSeleccionados([]);
+    seleccion.limpiar();
   };
 
   const cambiarUrgencia = (valor: string) => {
     setUrgencia(valor);
-    setSeleccionados([]);
+    seleccion.limpiar();
   };
 
   // La ✕ junto a los filtros activos: quita los del panel (no la búsqueda)
@@ -150,22 +128,22 @@ export default function DespensaScreen({ navigation, route }: any) {
     setUrgencia('');
     setUbicacion('');
     setCategoria('');
-    setSeleccionados([]);
+    seleccion.limpiar();
   };
 
   const cambiarCategoria = (valor: string) => {
     setCategoria(valor);
-    setSeleccionados([]);
+    seleccion.limpiar();
   };
 
   const cambiarUbicacion = (valor: string) => {
     setUbicacion(valor);
-    setSeleccionados([]);
+    seleccion.limpiar();
   };
 
   // Después de aplicar una acción a los seleccionados
   const terminarSeleccion = () => {
-    setSeleccionados([]);
+    seleccion.limpiar();
     cargarProductos();
   };
 
@@ -213,8 +191,8 @@ export default function DespensaScreen({ navigation, route }: any) {
           <FilaProducto
             producto={item}
             onPress={() => tocarProducto(item)}
-            onLongPress={() => alternarSeleccion(item.id)}
-            seleccionado={seleccionados.includes(item.id)}
+            onLongPress={() => seleccion.alternar(item.id)}
+            seleccionado={seleccion.seleccionados.includes(item.id)}
           />
         )}
         keyExtractor={(item) => item.id}
@@ -240,11 +218,11 @@ export default function DespensaScreen({ navigation, route }: any) {
         showsVerticalScrollIndicator={false}
       />
 
-      {enSeleccion ? (
+      {seleccion.enSeleccion ? (
         // Reemplaza a los botones flotantes mientras hay selección
         <BarraSeleccion
-          seleccionados={seleccionados}
-          onCancelar={() => setSeleccionados([])}
+          seleccionados={seleccion.seleccionados}
+          onCancelar={seleccion.limpiar}
           onTerminar={terminarSeleccion}
         />
       ) : (

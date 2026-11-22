@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { AppState, BackHandler, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import FilaProducto from '../components/FilaProducto';
 import BarraSeleccion from '../components/BarraSeleccion';
+import useSeleccion from '../hooks/useSeleccion';
 import { leerProductos, Producto } from '../lib/almacenamiento';
 import { grupoCaducidad, hoy } from '../lib/fechas';
 import { colores, espacios, bordes } from '../constants/colores';
@@ -72,8 +73,7 @@ function resumenDelMes(productos: Producto[]): ResumenMes {
 export default function InicioScreen({ navigation }: any) {
   const [secciones, setSecciones] = useState<SeccionUrgencia[]>([]);
   const [resumen, setResumen] = useState<ResumenMes>({ aprovechados: 0, tirados: 0 });
-  const [seleccionados, setSeleccionados] = useState<string[]>([]); // ids marcados
-  const enSeleccion = seleccionados.length > 0;
+  const seleccion = useSeleccion(navigation); // selección múltiple (mantener pulsado)
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
@@ -91,38 +91,16 @@ export default function InicioScreen({ navigation }: any) {
 
   useEffect(() => {
     const sub = navigation.addListener('focus', () => {
-      setSeleccionados([]);
       cargarProductos();
     });
 
     return sub;
   }, [navigation]);
 
-  // Android: el botón de atrás quita la selección en vez de salir de la pantalla
-  useEffect(() => {
-    if (!enSeleccion) return;
-
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      setSeleccionados([]);
-      return true; // ya se manejó: no regresa ni cierra la app
-    });
-
-    return () => sub.remove();
-  }, [enSeleccion]);
-
-  // Marca o desmarca un producto
-  const alternarSeleccion = (id: string) => {
-    if (seleccionados.includes(id)) {
-      setSeleccionados(seleccionados.filter((s) => s !== id));
-    } else {
-      setSeleccionados([...seleccionados, id]);
-    }
-  };
-
   // En modo selección, tocar marca o desmarca; si no, abre el producto
   const tocarProducto = (producto: Producto) => {
-    if (enSeleccion) {
-      alternarSeleccion(producto.id);
+    if (seleccion.enSeleccion) {
+      seleccion.alternar(producto.id);
     } else {
       navigation.navigate('Producto', { id: producto.id });
     }
@@ -130,7 +108,7 @@ export default function InicioScreen({ navigation }: any) {
 
   // Después de aplicar una acción: la lista y el resumen del mes se actualizan
   const terminarSeleccion = () => {
-    setSeleccionados([]);
+    seleccion.limpiar();
     cargarProductos();
   };
 
@@ -146,8 +124,8 @@ export default function InicioScreen({ navigation }: any) {
           <FilaProducto
             producto={item}
             onPress={() => tocarProducto(item)}
-            onLongPress={() => alternarSeleccion(item.id)}
-            seleccionado={seleccionados.includes(item.id)}
+            onLongPress={() => seleccion.alternar(item.id)}
+            seleccionado={seleccion.seleccionados.includes(item.id)}
           />
         )}
         keyExtractor={(item) => item.id}
@@ -248,10 +226,10 @@ export default function InicioScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       />
 
-      {enSeleccion ? (
+      {seleccion.enSeleccion ? (
         <BarraSeleccion
-          seleccionados={seleccionados}
-          onCancelar={() => setSeleccionados([])}
+          seleccionados={seleccion.seleccionados}
+          onCancelar={seleccion.limpiar}
           onTerminar={terminarSeleccion}
         />
       ) : null}
