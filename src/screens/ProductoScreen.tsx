@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CampoTexto from '../components/CampoTexto';
 import ChipFiltro from '../components/ChipFiltro';
 import Boton from '../components/Boton';
+import AccionesProducto from '../components/AccionesProducto';
 import useForm from '../hooks/useForm';
 import {
   actualizarProducto,
@@ -374,6 +375,32 @@ export default function ProductoScreen({ navigation, route }: any) {
           keyboardType="decimal-pad"
         />
 
+        {/* Unidad justo después de cantidad: "2" y "kg" son un solo dato */}
+        <Text style={styles.etiqueta}>Unidad</Text>
+        <View style={styles.chips}>
+          {UNIDADES.map((opcion) => (
+            <ChipFiltro
+              key={opcion.valor}
+              texto={opcion.texto}
+              seleccionado={form.values.unidad === opcion.valor}
+              onPress={() => form.handleChange('unidad')(opcion.valor)}
+            />
+          ))}
+        </View>
+
+        {/* Ubicación antes de la fecha: la fecha sugerida depende de dónde se guarda */}
+        <Text style={styles.etiqueta}>Ubicación</Text>
+        <View style={styles.chips}>
+          {UBICACIONES.map((opcion) => (
+            <ChipFiltro
+              key={opcion.valor}
+              texto={opcion.texto}
+              seleccionado={form.values.ubicacion === opcion.valor}
+              onPress={() => cambiarUbicacion(opcion.valor as ProductoForm['ubicacion'])}
+            />
+          ))}
+        </View>
+
         <Text style={styles.etiqueta}>Fecha de caducidad</Text>
         <TouchableOpacity
           style={[styles.selectorFecha, errorFecha ? styles.selectorFechaError : null]}
@@ -424,18 +451,6 @@ export default function ProductoScreen({ navigation, route }: any) {
           })}
         </View>
 
-        <Text style={styles.etiqueta}>Unidad</Text>
-        <View style={styles.chips}>
-          {UNIDADES.map((opcion) => (
-            <ChipFiltro
-              key={opcion.valor}
-              texto={opcion.texto}
-              seleccionado={form.values.unidad === opcion.valor}
-              onPress={() => form.handleChange('unidad')(opcion.valor)}
-            />
-          ))}
-        </View>
-
         <Text style={styles.etiqueta}>Categoría</Text>
         <View style={styles.chips}>
           {CATEGORIAS.map((opcion) => (
@@ -444,18 +459,6 @@ export default function ProductoScreen({ navigation, route }: any) {
               texto={opcion.texto}
               seleccionado={form.values.categoria === opcion.valor}
               onPress={() => form.handleChange('categoria')(opcion.valor)}
-            />
-          ))}
-        </View>
-
-        <Text style={styles.etiqueta}>Ubicación</Text>
-        <View style={styles.chips}>
-          {UBICACIONES.map((opcion) => (
-            <ChipFiltro
-              key={opcion.valor}
-              texto={opcion.texto}
-              seleccionado={form.values.ubicacion === opcion.valor}
-              onPress={() => cambiarUbicacion(opcion.valor as ProductoForm['ubicacion'])}
             />
           ))}
         </View>
@@ -470,9 +473,12 @@ export default function ProductoScreen({ navigation, route }: any) {
         {productoOriginal ? (
           <View style={styles.acciones}>
             <Text style={styles.etiqueta}>¿Ya no lo tienes?</Text>
-            <Boton texto="Me lo comí" onPress={() => confirmarEstado('consumido')} secundario />
-            <Boton texto="Lo tiré" onPress={() => confirmarEstado('tirado')} secundario />
-            <Boton texto="Eliminar" onPress={confirmarEliminar} secundario peligro />
+            {/* Igual que en la barra de selección múltiple */}
+            <AccionesProducto
+              onComi={() => confirmarEstado('consumido')}
+              onTire={() => confirmarEstado('tirado')}
+              onEliminar={confirmarEliminar}
+            />
           </View>
         ) : null}
       </ScrollView>

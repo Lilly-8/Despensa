@@ -1,5 +1,6 @@
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AccionesProducto from './AccionesProducto';
 import { cambiarEstadoVarios, eliminarVarios } from '../lib/almacenamiento';
 import { reprogramarAvisos } from '../lib/notificaciones';
 import { colores, espacios, bordes } from '../constants/colores';
@@ -68,26 +69,11 @@ export default function BarraSeleccion({ seleccionados, onCancelar, onTerminar }
         </TouchableOpacity>
       </View>
 
-      <View style={styles.acciones}>
-        <TouchableOpacity style={styles.accion} onPress={() => confirmarAccion('consumido')}>
-          <Ionicons name="restaurant-outline" size={22} color={colores.primario} />
-          <Text style={styles.accionTexto}>Me lo comí</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.accion, styles.accionDivisor]}
-          onPress={() => confirmarAccion('tirado')}
-        >
-          <Ionicons name="trash-outline" size={22} color={colores.texto} />
-          <Text style={styles.accionTexto}>Lo tiré</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.accion, styles.accionDivisor]}
-          onPress={() => confirmarAccion('eliminar')}
-        >
-          <Ionicons name="close-circle-outline" size={22} color={colores.urgente} />
-          <Text style={[styles.accionTexto, styles.accionPeligro]}>Eliminar</Text>
-        </TouchableOpacity>
-      </View>
+      <AccionesProducto
+        onComi={() => confirmarAccion('consumido')}
+        onTire={() => confirmarAccion('tirado')}
+        onEliminar={() => confirmarAccion('eliminar')}
+      />
     </View>
   );
 }
@@ -112,29 +98,5 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: colores.texto,
-  },
-  acciones: {
-    flexDirection: 'row',
-    borderWidth: bordes.grosor,
-    borderColor: colores.borde,
-    borderRadius: bordes.radio,
-  },
-  accion: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: espacios.s,
-  },
-  accionDivisor: {
-    borderLeftWidth: bordes.grosor,
-    borderLeftColor: colores.borde,
-  },
-  accionTexto: {
-    marginTop: espacios.xs,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colores.texto,
-  },
-  accionPeligro: {
-    color: colores.urgente,
   },
 });
