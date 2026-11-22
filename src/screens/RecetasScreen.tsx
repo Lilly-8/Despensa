@@ -110,6 +110,8 @@ export default function RecetasScreen({ navigation }: any) {
     const alDia = conIngredientesAlDia(item, productos);
     const tengo = alDia.ingredientes.filter((i) => i.tengo).length;
     const total = alDia.ingredientes.length;
+    // Los nombres de lo que falta, para decidir sin abrir la receta
+    const faltan = alDia.ingredientes.filter((i) => !i.tengo).map((i) => i.nombre);
 
     return (
       <TouchableOpacity
@@ -120,6 +122,12 @@ export default function RecetasScreen({ navigation }: any) {
         <Text style={styles.detalle}>
           {item.tiempo_min} min · Tienes {tengo} de {total} ingredientes
         </Text>
+        {faltan.length > 0 ? (
+          <Text style={styles.faltan}>
+            <Text style={styles.faltanEtiqueta}>Te falta: </Text>
+            {faltan.join(', ')}
+          </Text>
+        ) : null}
         {item.aprovecha.length > 0 ? (
           <Text style={styles.aprovecha}>Aprovecha: {item.aprovecha.join(', ')}</Text>
         ) : null}
@@ -256,6 +264,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colores.textoSuave,
     marginBottom: espacios.xs,
+  },
+  // "Te falta: leche, huevo": texto normal, con la etiqueta en negritas
+  faltan: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colores.texto,
+    marginBottom: espacios.xs,
+  },
+  faltanEtiqueta: {
+    fontWeight: '600',
   },
   aprovecha: {
     fontSize: 14,
