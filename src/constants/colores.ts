@@ -14,7 +14,10 @@ export const colores = {
   // Urgencia por caducidad
   urgente: '#C8442E', 
   pronto: '#C9962B', //
-  tranquilo: '#8FA27E', 
+  tranquilo: '#8FA27E',
+
+  // Fondo oscuro detrás de los paneles (Modal): el color del texto al 40 %
+  velo: 'rgba(42, 33, 27, 0.4)',
 };
 
 export const espacios = {

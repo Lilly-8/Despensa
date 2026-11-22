@@ -18,6 +18,15 @@ export const UNIDADES: Opcion[] = [
   { valor: 'paquete', texto: 'paquete' },
 ];
 
+// Filtro por caducidad en Despensa. Los valores son los de grupoCaducidad (src/lib/fechas.ts).
+export const URGENCIAS: Opcion[] = [
+  { valor: 'caducados', texto: 'Caducados' },
+  { valor: 'urgente', texto: '3 días o menos' },
+  { valor: 'pronto', texto: '7 días o menos' },
+  { valor: 'mes', texto: 'Este mes' },
+  { valor: 'sinFecha', texto: 'Sin fecha' },
+];
+
 export const CATEGORIAS: Opcion[] = [
   { valor: 'lacteos', texto: 'Lácteos' },
   { valor: 'verduras', texto: 'Verduras' },

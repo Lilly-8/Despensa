@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BackHandler, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BackHandler, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
@@ -7,20 +7,24 @@ import CampoTexto from '../components/CampoTexto';
 import FilaProducto from '../components/FilaProducto';
 import ChipFiltro from '../components/ChipFiltro';
 import BarraSeleccion from '../components/BarraSeleccion';
+import Boton from '../components/Boton';
 import { leerProductos, Producto } from '../lib/almacenamiento';
+import { grupoCaducidad } from '../lib/fechas';
 import { normalizarTexto } from '../lib/texto';
 import { colores, espacios, bordes } from '../constants/colores';
-import { CATEGORIAS, UBICACIONES, Opcion } from '../constants/opciones';
+import { CATEGORIAS, UBICACIONES, URGENCIAS, Opcion } from '../constants/opciones';
 
+// Opciones del panel de filtros: '' = sin filtrar
+const FILTRO_URGENCIAS: Opcion[] = [{ valor: '', texto: 'Todas' }, ...URGENCIAS];
+const FILTRO_UBICACIONES: Opcion[] = [{ valor: '', texto: 'Todas' }, ...UBICACIONES];
+const FILTRO_CATEGORIAS: Opcion[] = [{ valor: '', texto: 'Todas' }, ...CATEGORIAS];
 
-const FILTRO_CATEGORIAS: Opcion[] = [
-  { valor: '', texto: 'Todas las categorías' },
-  ...CATEGORIAS,
-];
-const FILTRO_UBICACIONES: Opcion[] = [
-  { valor: '', texto: 'Todas las ubicaciones' },
-  ...UBICACIONES,
-];
+// El texto de una opción elegida ('' si no hay filtro)
+function textoDeOpcion(opciones: Opcion[], valor: string): string {
+  if (valor === '') return '';
+  const opcion = opciones.find((o) => o.valor === valor);
+  return opcion ? opcion.texto : '';
+}
 
 // Ordena por fecha de caducidad: lo que caduca primero va arriba.
 // Los productos sin fecha se van al final.
@@ -32,24 +36,34 @@ function ordenarPorFecha(productos: Producto[]): Producto[] {
   });
 }
 
-export default function DespensaScreen({ navigation }: any) {
+// route.params.urgencia: lo manda Inicio al tocar "Ya caducaron", "Esta semana"…
+export default function DespensaScreen({ navigation, route }: any) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const [urgencia, setUrgencia] = useState(''); // '' = todas
   const [categoria, setCategoria] = useState(''); // '' = todas
   const [ubicacion, setUbicacion] = useState(''); // '' = todas
+  const [panelVisible, setPanelVisible] = useState(false); // panel de filtros
   const [seleccionados, setSeleccionados] = useState<string[]>([]); // ids marcados
   const enSeleccion = seleccionados.length > 0;
-
 
   const textoBuscado = normalizarTexto(busqueda);
   const productosFiltrados = productos.filter(
     (p) =>
       normalizarTexto(p.nombre).includes(textoBuscado) &&
+      (urgencia === '' || grupoCaducidad(p.fechaCaducidad) === urgencia) &&
       (categoria === '' || p.categoria === categoria) &&
       (ubicacion === '' || p.ubicacion === ubicacion)
   );
-  const hayFiltros = textoBuscado !== '' || categoria !== '' || ubicacion !== '';
+  const hayFiltros = textoBuscado !== '' || urgencia !== '' || categoria !== '' || ubicacion !== '';
+
+  // Lo que se ve junto a "Filtrar", ej. "Caducados · Refrigerador"
+  const filtrosActivos = [
+    textoDeOpcion(URGENCIAS, urgencia),
+    textoDeOpcion(UBICACIONES, ubicacion),
+    textoDeOpcion(CATEGORIAS, categoria),
+  ].filter((texto) => texto !== '');
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
@@ -64,8 +78,31 @@ export default function DespensaScreen({ navigation }: any) {
       cargarProductos();
     });
 
-    return sub; 
+    return sub;
   }, [navigation]);
+
+  // Si se llegó desde Inicio con una urgencia, se muestra solo eso.
+  // Se compara con la anterior para aplicarla una sola vez cuando cambia
+  // (así lo recomienda React, en lugar de un useEffect con setState).
+  const urgenciaRecibida = route.params ? route.params.urgencia : undefined;
+  const [urgenciaAnterior, setUrgenciaAnterior] = useState(urgenciaRecibida);
+  if (urgenciaRecibida !== urgenciaAnterior) {
+    setUrgenciaAnterior(urgenciaRecibida);
+    if (urgenciaRecibida !== undefined) {
+      setUrgencia(urgenciaRecibida);
+      setUbicacion('');
+      setCategoria('');
+      setBusqueda('');
+    }
+  }
+
+  // Ya aplicada, se borra el parámetro. Si no, tocar dos veces seguidas
+  // "Ya caducaron" en Inicio no volvería a filtrar.
+  useEffect(() => {
+    if (urgenciaRecibida !== undefined) {
+      navigation.setParams({ urgencia: undefined });
+    }
+  }, [urgenciaRecibida, navigation]);
 
   // Android: el botón de atrás quita la selección en vez de salir de la pantalla
   useEffect(() => {
@@ -100,6 +137,19 @@ export default function DespensaScreen({ navigation }: any) {
   // Al buscar o filtrar se borra la selección, para no actuar sobre algo que ya no se ve
   const cambiarBusqueda = (texto: string) => {
     setBusqueda(texto);
+    setSeleccionados([]);
+  };
+
+  const cambiarUrgencia = (valor: string) => {
+    setUrgencia(valor);
+    setSeleccionados([]);
+  };
+
+  // La ✕ junto a los filtros activos: quita los del panel (no la búsqueda)
+  const quitarFiltros = () => {
+    setUrgencia('');
+    setUbicacion('');
+    setCategoria('');
     setSeleccionados([]);
   };
 
@@ -141,37 +191,21 @@ export default function DespensaScreen({ navigation }: any) {
         />
       </View>
 
-      <FlatList
-        data={FILTRO_CATEGORIAS}
-        renderItem={({ item }) => (
-          <ChipFiltro
-            texto={item.texto}
-            seleccionado={categoria === item.valor}
-            onPress={() => cambiarCategoria(item.valor)}
-          />
-        )}
-        keyExtractor={(item) => 'categoria-' + item.valor}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filtros}
-        contentContainerStyle={styles.filtrosContenido}
-      />
-
-      <FlatList
-        data={FILTRO_UBICACIONES}
-        renderItem={({ item }) => (
-          <ChipFiltro
-            texto={item.texto}
-            seleccionado={ubicacion === item.valor}
-            onPress={() => cambiarUbicacion(item.valor)}
-          />
-        )}
-        keyExtractor={(item) => 'ubicacion-' + item.valor}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filtros}
-        contentContainerStyle={styles.filtrosContenido}
-      />
+      {/* Una sola línea: abre el panel y dice qué filtros hay puestos */}
+      <View style={styles.filtros}>
+        <TouchableOpacity style={styles.botonFiltrar} onPress={() => setPanelVisible(true)}>
+          <Ionicons name="options-outline" size={20} color={colores.primario} />
+          <Text style={styles.botonFiltrarTexto}>Filtrar</Text>
+        </TouchableOpacity>
+        <Text style={styles.filtrosActivos} numberOfLines={1}>
+          {filtrosActivos.length > 0 ? filtrosActivos.join(' · ') : 'Sin filtros'}
+        </Text>
+        {filtrosActivos.length > 0 ? (
+          <TouchableOpacity onPress={quitarFiltros}>
+            <Ionicons name="close-outline" size={22} color={colores.textoSuave} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
 
       <FlatList
         data={productosFiltrados}
@@ -231,6 +265,76 @@ export default function DespensaScreen({ navigation }: any) {
           </TouchableOpacity>
         </>
       )}
+
+      {/* Panel de filtros: sube desde abajo, encima de la lista.
+          Cada opción se aplica al tocarla; el botón de abajo solo cierra. */}
+      <Modal
+        visible={panelVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setPanelVisible(false)} // botón "atrás" de Android
+      >
+        <View style={styles.velo}>
+          {/* Tocar lo oscuro de arriba también cierra */}
+          <TouchableOpacity style={styles.veloZona} onPress={() => setPanelVisible(false)} />
+
+          <View style={styles.panel}>
+            <View style={styles.panelEncabezado}>
+              <Text style={styles.panelTitulo}>Filtrar</Text>
+              <TouchableOpacity onPress={() => setPanelVisible(false)}>
+                <Ionicons name="close-outline" size={26} color={colores.textoSuave} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.grupoTitulo}>Caducidad</Text>
+            <View style={styles.opciones}>
+              {FILTRO_URGENCIAS.map((opcion) => (
+                <ChipFiltro
+                  key={'urgencia-' + opcion.valor}
+                  texto={opcion.texto}
+                  seleccionado={urgencia === opcion.valor}
+                  onPress={() => cambiarUrgencia(opcion.valor)}
+                />
+              ))}
+            </View>
+
+            <Text style={styles.grupoTitulo}>Ubicación</Text>
+            <View style={styles.opciones}>
+              {FILTRO_UBICACIONES.map((opcion) => (
+                <ChipFiltro
+                  key={'ubicacion-' + opcion.valor}
+                  texto={opcion.texto}
+                  seleccionado={ubicacion === opcion.valor}
+                  onPress={() => cambiarUbicacion(opcion.valor)}
+                />
+              ))}
+            </View>
+
+            <Text style={styles.grupoTitulo}>Categoría</Text>
+            <View style={styles.opciones}>
+              {FILTRO_CATEGORIAS.map((opcion) => (
+                <ChipFiltro
+                  key={'categoria-' + opcion.valor}
+                  texto={opcion.texto}
+                  seleccionado={categoria === opcion.valor}
+                  onPress={() => cambiarCategoria(opcion.valor)}
+                />
+              ))}
+            </View>
+
+            <View style={styles.panelBoton}>
+              <Boton
+                texto={
+                  productosFiltrados.length === 1
+                    ? 'Ver 1 producto'
+                    : `Ver ${productosFiltrados.length} productos`
+                }
+                onPress={() => setPanelVisible(false)}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -244,15 +348,79 @@ const styles = StyleSheet.create({
   busqueda: {
     paddingTop: espacios.m,
   },
+  // Línea de filtros: "Filtrar" a la izquierda, lo activo a la derecha
   filtros: {
-    flexGrow: 0, 
-    flexShrink: 0, 
-    marginHorizontal: -espacios.l, 
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.s,
+    paddingVertical: espacios.s,
+    borderBottomWidth: bordes.grosor,
+    borderBottomColor: colores.borde,
+  },
+  botonFiltrar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.xs,
+    paddingVertical: espacios.xs,
+    paddingRight: espacios.s,
+  },
+  botonFiltrarTexto: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colores.primario,
+  },
+  filtrosActivos: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 14,
+    color: colores.textoSuave,
+  },
+  // Panel de filtros (Modal)
+  velo: {
+    flex: 1,
+    backgroundColor: colores.velo,
+    justifyContent: 'flex-end',
+  },
+  veloZona: {
+    flex: 1,
+  },
+  panel: {
+    backgroundColor: colores.fondo,
+    borderTopWidth: bordes.grosor,
+    borderTopColor: colores.borde,
+    borderTopLeftRadius: bordes.radio,
+    borderTopRightRadius: bordes.radio,
+    paddingHorizontal: espacios.l,
+    paddingTop: espacios.m,
+    paddingBottom: espacios.xl,
+  },
+  panelEncabezado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: espacios.s,
   },
-  filtrosContenido: {
-    paddingHorizontal: espacios.l,
+  panelTitulo: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colores.texto,
+  },
+  grupoTitulo: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colores.texto,
+    marginTop: espacios.m,
+    marginBottom: espacios.s,
+  },
+  opciones: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: espacios.s,
+  },
+  panelBoton: {
+    marginTop: espacios.l,
   },
   lista: {
     // Espacio para que los dos botones flotantes no tapen el último producto
