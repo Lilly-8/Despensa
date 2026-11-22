@@ -138,7 +138,7 @@ export default function RecetasScreen({ navigation }: any) {
     <View style={styles.vacio}>
       <Text style={styles.vacioTitulo}>Todavía no hay recetas</Text>
       <Text style={styles.vacioTexto}>
-        Toca "Generar recetas" para ver ideas que aprovechan lo que está por caducar.
+        Toca &quot;Generar recetas&quot; para ver ideas que aprovechan lo que está por caducar.
       </Text>
     </View>
   );
@@ -178,20 +178,15 @@ export default function RecetasScreen({ navigation }: any) {
         />
       </View>
 
-      {/* Indicador honesto de la caché. Si nada cambió, basta una línea;
-          si la despensa cambió, caja, porque hay que volver a generar. */}
-      {mostrarCache && despensaIgual ? (
-        <Text style={styles.cacheLinea}>
-          Guardadas el {textoFechaHora(guardadoEn)} · tu despensa no ha cambiado
-        </Text>
-      ) : null}
-
-      {mostrarCache && !despensaIgual ? (
-        <View style={[styles.aviso, styles.avisoSinConexion]}>
-          <Text style={styles.avisoTitulo}>Tu despensa cambió</Text>
-          <Text style={styles.avisoTexto}>
-            Estas recetas son del {textoFechaHora(guardadoEn)}, de antes de tus últimos cambios.
-            Toca &quot;Generar recetas&quot; para actualizarlas.
+      {/* Indicador honesto de la caché, en una línea discreta.
+          Si la despensa cambió, un punto mostaza lo hace notar; el botón de
+          arriba ya dice "Generar recetas" para actualizarlas. */}
+      {mostrarCache ? (
+        <View style={styles.cacheFila}>
+          {!despensaIgual ? <View style={styles.cachePunto} /> : null}
+          <Text style={styles.cacheLinea}>
+            Guardadas el {textoFechaHora(guardadoEn)} ·{' '}
+            {despensaIgual ? 'tu despensa no ha cambiado' : 'tu despensa cambió'}
           </Text>
         </View>
       ) : null}
@@ -287,12 +282,26 @@ const styles = StyleSheet.create({
   avisoError: {
     borderLeftColor: colores.urgente,
   },
-  // Recetas guardadas y la despensa igual: solo informa, por eso sin caja
+  // Recetas guardadas: solo informa, por eso sin caja
+  cacheFila: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingBottom: espacios.s,
+  },
+  // Mismo punto que las secciones de urgencia en Inicio
+  cachePunto: {
+    width: 8,
+    height: 8,
+    borderRadius: bordes.radio / 2,
+    backgroundColor: colores.pronto,
+    marginTop: 5, // centrado con la primera línea del texto
+    marginRight: espacios.s,
+  },
   cacheLinea: {
+    flex: 1,
     fontSize: 13,
     lineHeight: 18,
     color: colores.textoSuave,
-    paddingBottom: espacios.s,
   },
   avisoTitulo: {
     fontSize: 16,
