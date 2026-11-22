@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import CampoTexto from '../components/CampoTexto';
-import Boton from '../components/Boton';
 import {
   actualizarItemCompra,
   agregarItemCompra,
@@ -176,7 +175,8 @@ export default function ComprasScreen({ navigation }: any) {
         titulo="Lista del súper"
       />
 
-      {/* Formulario para agregar: nombre y cantidad en la misma fila */}
+      {/* Formulario para agregar: nombre, cantidad y + en la misma fila,
+          para que la lista tenga más espacio (sobre todo con el teclado abierto) */}
       <View style={styles.formulario}>
         <View style={styles.campoNombre}>
           <CampoTexto
@@ -194,8 +194,15 @@ export default function ComprasScreen({ navigation }: any) {
             keyboardType="decimal-pad"
           />
         </View>
+        <TouchableOpacity
+          style={[styles.botonAgregar, !nombre.trim() && styles.botonAgregarDesactivado]}
+          onPress={agregar}
+          disabled={!nombre.trim()}
+          accessibilityLabel="Agregar a la lista"
+        >
+          <Ionicons name="add" size={20} color={colores.textoSobrePrimario} />
+        </TouchableOpacity>
       </View>
-      <Boton texto="Agregar a la lista" onPress={agregar} desactivado={!nombre.trim()} />
 
       <SectionList
         sections={secciones}
@@ -227,7 +234,6 @@ export default function ComprasScreen({ navigation }: any) {
           </View>
         }
         keyboardShouldPersistTaps="handled"
-        style={styles.lista}
         contentContainerStyle={styles.listaContenido}
         showsVerticalScrollIndicator={false}
       />
@@ -243,6 +249,7 @@ const styles = StyleSheet.create({
   },
   formulario: {
     flexDirection: 'row',
+    alignItems: 'flex-end', // el + queda a la altura de los campos, no de las etiquetas
     gap: espacios.s,
     paddingTop: espacios.m,
   },
@@ -250,10 +257,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   campoCantidad: {
-    width: 96,
+    width: 80,
   },
-  lista: {
-    marginTop: espacios.m,
+  // Misma altura que un CampoTexto: mismo borde y relleno vertical, ícono del
+  // tamaño de una línea de texto. marginBottom igual al margen de CampoTexto.
+  botonAgregar: {
+    borderWidth: bordes.grosor,
+    borderColor: colores.primario,
+    borderRadius: bordes.radio,
+    backgroundColor: colores.primario,
+    paddingVertical: espacios.s + espacios.xs,
+    paddingHorizontal: espacios.m,
+    marginBottom: espacios.m,
+  },
+  botonAgregarDesactivado: {
+    opacity: 0.5,
   },
   listaContenido: {
     paddingBottom: espacios.xl,
