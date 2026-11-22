@@ -1,56 +1,44 @@
 import { useEffect, useState } from 'react';
-import { AppState, BackHandler, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import FilaProducto from '../components/FilaProducto';
 import BarraSeleccion from '../components/BarraSeleccion';
 import { leerProductos, Producto } from '../lib/almacenamiento';
-import { diasRestantes, hoy, nivelUrgencia } from '../lib/fechas';
+import { grupoCaducidad, hoy } from '../lib/fechas';
 import { colores, espacios, bordes } from '../constants/colores';
 
 const DIAS_PRONTO = 30;
+const CUANTOS_URGENTES = 3; // productos en "Lo más urgente"; el resto se ve en Despensa
 
 interface SeccionUrgencia {
   titulo: string;
+  urgencia: string; // valor de grupoCaducidad; se manda a Despensa para filtrar
   color: string;
   data: Producto[];
 }
 
+// Agrupa con grupoCaducidad, el mismo criterio que el filtro de Despensa.
 // Las secciones vacías no se muestran.
 function armarSecciones(productos: Producto[]): SeccionUrgencia[] {
-  const caducados: Producto[] = [];
-  const urgentes: Producto[] = [];
-  const pronto: Producto[] = [];
-  const tranquilos: Producto[] = [];
+  const secciones: SeccionUrgencia[] = [
+    // Primero, para que se marquen como tirados y salgan de la despensa
+    { titulo: 'Ya caducaron', urgencia: 'caducados', color: colores.textoSuave, data: [] },
+    { titulo: 'Úsalo ya · 3 días o menos', urgencia: 'urgente', color: colores.urgente, data: [] },
+    { titulo: 'Esta semana · 7 días o menos', urgencia: 'pronto', color: colores.pronto, data: [] },
+    { titulo: 'Este mes', urgencia: 'mes', color: colores.tranquilo, data: [] },
+  ];
 
   const conFecha = productos
     .filter((p) => p.estado === 'activo' && p.fechaCaducidad !== '')
     .sort((a, b) => a.fechaCaducidad.localeCompare(b.fechaCaducidad));
 
+  // Los de más de un mes ("despues") no entran en ninguna sección
   for (const producto of conFecha) {
-    const dias = diasRestantes(producto.fechaCaducidad);
-    if (dias > DIAS_PRONTO) continue;
-
-    // Ya no se pueden usar: van aparte, no en "Úsalo ya"
-    if (dias < 0) {
-      caducados.push(producto);
-      continue;
-    }
-
-    const nivel = nivelUrgencia(dias);
-    if (nivel === 'urgente') urgentes.push(producto);
-    else if (nivel === 'pronto') pronto.push(producto);
-    else tranquilos.push(producto);
+    const seccion = secciones.find((s) => s.urgencia === grupoCaducidad(producto.fechaCaducidad));
+    if (seccion) seccion.data.push(producto);
   }
-
-  const secciones: SeccionUrgencia[] = [
-    // Primero, para que se marquen como tirados y salgan de la despensa
-    { titulo: 'Ya caducaron', color: colores.textoSuave, data: caducados },
-    { titulo: 'Úsalo ya · 3 días o menos', color: colores.urgente, data: urgentes },
-    { titulo: 'Esta semana · 7 días o menos', color: colores.pronto, data: pronto },
-    { titulo: 'Este mes', color: colores.tranquilo, data: tranquilos },
-  ];
 
   return secciones.filter((s) => s.data.length > 0);
 }
@@ -146,10 +134,14 @@ export default function InicioScreen({ navigation }: any) {
     cargarProductos();
   };
 
+  // Las secciones ya vienen en orden de urgencia y cada una ordenada por fecha,
+  // así que los primeros de la lista juntada son los que caducan antes.
+  const masUrgentes = secciones.flatMap((s) => s.data).slice(0, CUANTOS_URGENTES);
+
   return (
     <SafeAreaView style={styles.contenedor} edges={['top']}>
-      <SectionList
-        sections={secciones}
+      <FlatList
+        data={masUrgentes}
         renderItem={({ item }) => (
           <FilaProducto
             producto={item}
@@ -158,16 +150,20 @@ export default function InicioScreen({ navigation }: any) {
             seleccionado={seleccionados.includes(item.id)}
           />
         )}
-        renderSectionHeader={({ section }) => (
-          <View style={styles.seccion}>
-            <View style={[styles.marca, { backgroundColor: section.color }]} />
-            <Text style={styles.seccionTitulo}>{section.titulo}</Text>
-            <Text style={styles.seccionCantidad}>{section.data.length}</Text>
-          </View>
-        )}
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
-        stickySectionHeadersEnabled={false}
+        ListFooterComponent={
+          masUrgentes.length > 0 ? (
+            <TouchableOpacity
+              style={styles.verTodo}
+              // urgencia '' = sin filtro, para que de verdad se vea todo
+              onPress={() => navigation.navigate('Despensa', { urgencia: '' })}
+            >
+              <Text style={styles.verTodoTexto}>Ver toda la despensa</Text>
+              <Ionicons name="chevron-forward-outline" size={18} color={colores.primario} />
+            </TouchableOpacity>
+          ) : undefined
+        }
         ListHeaderComponent={
           <View>
             <Encabezado
@@ -214,6 +210,30 @@ export default function InicioScreen({ navigation }: any) {
                 </View>
               )}
             </View>
+
+            {/* Para hoy: cuántos productos hay en cada nivel de urgencia.
+                Al tocar uno se abre Despensa filtrada solo con esos. */}
+            {secciones.length > 0 ? (
+              <View style={styles.bloque}>
+                <Text style={styles.bloqueTitulo}>Para hoy</Text>
+                {secciones.map((seccion, index) => (
+                  <TouchableOpacity
+                    key={seccion.titulo}
+                    style={[styles.conteo, index > 0 && styles.conteoDivisor]}
+                    onPress={() => navigation.navigate('Despensa', { urgencia: seccion.urgencia })}
+                  >
+                    <View style={[styles.marca, { backgroundColor: seccion.color }]} />
+                    <Text style={styles.conteoTexto}>{seccion.titulo}</Text>
+                    <Text style={styles.conteoNumero}>{seccion.data.length}</Text>
+                    <Ionicons name="chevron-forward-outline" size={18} color={colores.textoSuave} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
+            {masUrgentes.length > 0 ? (
+              <Text style={[styles.bloqueTitulo, styles.tituloUrgentes]}>Lo más urgente</Text>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
@@ -306,13 +326,28 @@ const styles = StyleSheet.create({
   barraTirados: {
     backgroundColor: colores.urgente,
   },
-  seccion: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // "Para hoy": franja con borde fino abajo, igual que el resumen del mes
+  bloque: {
     paddingTop: espacios.l,
-    paddingBottom: espacios.s,
     borderBottomWidth: bordes.grosor,
     borderBottomColor: colores.borde,
+  },
+  bloqueTitulo: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colores.texto,
+    marginBottom: espacios.xs,
+  },
+  conteo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: espacios.m,
+  },
+  conteoDivisor: {
+    borderTopWidth: bordes.grosor,
+    borderTopColor: colores.borde,
   },
   marca: {
     width: 10,
@@ -320,17 +355,37 @@ const styles = StyleSheet.create({
     borderRadius: bordes.radio / 2,
     marginRight: espacios.s,
   },
-  seccionTitulo: {
+  conteoTexto: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    fontSize: 16,
     color: colores.texto,
   },
-  seccionCantidad: {
-    fontSize: 13,
-    color: colores.textoSuave,
+  conteoNumero: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colores.texto,
+    marginRight: espacios.xs,
+  },
+  // "Lo más urgente": título con borde fino abajo, encima de las filas
+  tituloUrgentes: {
+    paddingTop: espacios.l,
+    paddingBottom: espacios.s,
+    marginBottom: 0,
+    borderBottomWidth: bordes.grosor,
+    borderBottomColor: colores.borde,
+  },
+  verTodo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacios.xs,
+    paddingVertical: espacios.m,
+    borderTopWidth: bordes.grosor,
+    borderTopColor: colores.borde,
+  },
+  verTodoTexto: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colores.primario,
   },
   separador: {
     height: bordes.grosor,
