@@ -88,7 +88,7 @@ export default function AjustesScreen({ navigation }: any) {
   // Para presentar la app: agrega datos de ejemplo junto a los tuyos
   const confirmarDemo = () => {
     Alert.alert(
-      'Cargar datos de demostración',
+      'Cargar datos de prueba',
       'Se agregarán productos y una lista de compras de ejemplo. Lo tuyo no se toca, y después puedes quitar solo los ejemplos.',
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -98,7 +98,7 @@ export default function AjustesScreen({ navigation }: any) {
             try {
               await cargarDatosDemo();
               await reprogramarAvisos(); // avisos de los productos de ejemplo
-              Alert.alert('Listo', 'Se cargaron los datos de demostración.', [
+              Alert.alert('Listo', 'Se cargaron los datos de prueba.', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } catch {
@@ -113,7 +113,7 @@ export default function AjustesScreen({ navigation }: any) {
   // Quita solo lo de ejemplo; lo del usuario se queda
   const confirmarBorrar = () => {
     Alert.alert(
-      'Borrar datos de demostración',
+      'Borrar datos de prueba',
       'Se quitarán los productos y la lista de compras de ejemplo. Lo tuyo no se toca.',
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -124,7 +124,7 @@ export default function AjustesScreen({ navigation }: any) {
             try {
               await borrarDatosDemo();
               await reprogramarAvisos(); // los avisos quedan solo con tus productos
-              Alert.alert('Listo', 'Se borraron los datos de demostración.', [
+              Alert.alert('Listo', 'Se borraron los datos de prueba.', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } catch {
@@ -138,6 +138,10 @@ export default function AjustesScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.contenedor} contentContainerStyle={styles.contenido}>
+      {/* Títulos de sección en mayúsculas pequeñas, como en Inicio y Recetas,
+          para que no se confundan con las etiquetas de cada ajuste */}
+      <Text style={styles.seccionTitulo}>Avisos</Text>
+
       {!hayPermiso ? (
         <View style={styles.avisoPermiso}>
           <Text style={styles.avisoTitulo}>Los avisos están desactivados</Text>
@@ -193,16 +197,13 @@ export default function AjustesScreen({ navigation }: any) {
         />
       </View>
 
-      {/* Datos de la app: separados de los ajustes con un borde fino */}
+      {/* Datos de prueba: separados de los ajustes con un borde fino.
+          Sin explicación aquí: la confirmación de cada botón ya dice que lo tuyo no se toca. */}
       <View style={styles.datos}>
-        <Text style={styles.etiqueta}>Datos de la app</Text>
-        <Text style={styles.datosTexto}>
-          Para presentar la app, agrega productos y una lista de compras de ejemplo. Se suman a
-          los tuyos, y al terminar puedes quitar solo los ejemplos.
-        </Text>
-        <Boton texto="Cargar datos de demostración" onPress={confirmarDemo} secundario />
+        <Text style={styles.seccionTitulo}>Datos de prueba</Text>
+        <Boton texto="Cargar datos de prueba" onPress={confirmarDemo} secundario />
         <Boton
-          texto="Borrar datos de demostración"
+          texto="Borrar datos de prueba"
           onPress={confirmarBorrar}
           secundario
           peligro
@@ -241,6 +242,14 @@ const styles = StyleSheet.create({
     color: colores.textoSuave,
     marginBottom: espacios.xs,
   },
+  seccionTitulo: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colores.texto,
+    marginBottom: espacios.m,
+  },
   etiqueta: {
     fontSize: 14,
     fontWeight: '600',
@@ -278,11 +287,5 @@ const styles = StyleSheet.create({
     borderTopWidth: bordes.grosor,
     borderTopColor: colores.borde,
     gap: espacios.s,
-  },
-  datosTexto: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colores.textoSuave,
-    marginBottom: espacios.s,
   },
 });
