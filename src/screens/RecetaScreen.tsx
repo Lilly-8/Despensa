@@ -6,6 +6,7 @@ import {
   guardarListaCompras,
   leerListaCompras,
   leerProductos,
+  nuevoId,
   Producto,
 } from '../lib/almacenamiento';
 import { conIngredientesAlDia, mismoNombre, Receta } from '../lib/recetas';
@@ -54,8 +55,8 @@ export default function RecetaScreen({ route }: any) {
           continue;
         }
         lista.push({
-          // Date.now() solo no basta: todos se crean en el mismo milisegundo
-          id: Date.now() + '-' + nuevos,
+          // nuevoId() solo no basta: todos se crean en el mismo milisegundo
+          id: nuevoId() + '-' + nuevos,
           nombre: ingrediente.nombre,
           cantidad: 1, // "al gusto" o "2 tazas" no caben en un número
           unidad: 'pza',
@@ -73,7 +74,7 @@ export default function RecetaScreen({ route }: any) {
           : `Se agregaron ${nuevos} a tu lista de compras.` +
             (yaEstaban > 0 ? ` ${yaEstaban} ya estaban.` : '');
       Alert.alert('Lista de compras', mensaje);
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo agregar', 'Intenta de nuevo.');
     } finally {
       setAgregando(false);

@@ -91,7 +91,7 @@ export async function pedirRecetas(productos: Producto[]): Promise<Receta[]> {
       body: JSON.stringify(cuerpo),
       signal: control.signal,
     });
-  } catch (error) {
+  } catch {
     // Sin internet, servidor caído o se acabó el tiempo
     throw new Error(
       control.signal.aborted
@@ -106,7 +106,7 @@ export async function pedirRecetas(productos: Producto[]): Promise<Receta[]> {
   let datos: any;
   try {
     datos = await respuesta.json();
-  } catch (error) {
+  } catch {
     throw new Error('La respuesta del servidor vino incompleta. Intenta de nuevo.');
   }
 

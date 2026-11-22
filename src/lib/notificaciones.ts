@@ -1,5 +1,7 @@
 import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+// Con nombre: el lint no lo encuentra dentro de "Notifications", aunque sí existe
+import { AndroidImportance } from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { leerAjustes, leerProductos } from './almacenamiento';
 import { formatoMexico, sumarDias, textoAFecha } from './fechas';
@@ -23,11 +25,11 @@ export async function configurarNotificaciones(): Promise<void> {
     try {
       await Notifications.setNotificationChannelAsync(CANAL_CADUCIDAD, {
         name: 'Caducidad',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: AndroidImportance.HIGH,
       });
     } catch (error) {
-      // mensaje de error para saber porque no llegan las notifiaciones 
-      // console.warn('No se pudo crear el canal de notificaciones:', error);
+      // Mensaje de error para saber por qué no llegan las notificaciones
+      console.warn('No se pudo crear el canal de notificaciones:', error);
     }
   }
 }
@@ -80,7 +82,7 @@ export async function tienePermisoNotificaciones(): Promise<boolean> {
   try {
     const permiso = await Notifications.getPermissionsAsync();
     return permiso.granted;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

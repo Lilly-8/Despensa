@@ -52,9 +52,14 @@ export default function AjustesScreen({ navigation }: any) {
     setHayPermiso(await tienePermisoNotificaciones());
   };
 
+  // Función async dentro del efecto, como en RecetaScreen: así el lint
+  // entiende que el estado cambia después de leer, no al instante.
   useEffect(() => {
-    cargarAjustes();
-    revisarPermiso();
+    const cargar = async () => {
+      await cargarAjustes();
+      await revisarPermiso();
+    };
+    cargar();
   }, []);
 
   // Al volver de la configuración del teléfono, revisar otra vez el permiso
@@ -73,7 +78,7 @@ export default function AjustesScreen({ navigation }: any) {
       // Mueve todos los avisos a los nuevos días y hora
       await reprogramarAvisos();
       navigation.goBack();
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
     } finally {
       setGuardando(false);
@@ -96,7 +101,7 @@ export default function AjustesScreen({ navigation }: any) {
               Alert.alert('Listo', 'Se cargaron los datos de demostración.', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
-            } catch (error) {
+            } catch {
               Alert.alert('No se pudieron cargar', 'Intenta de nuevo.');
             }
           },
@@ -122,7 +127,7 @@ export default function AjustesScreen({ navigation }: any) {
               Alert.alert('Listo', 'Se borraron los datos de demostración.', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
-            } catch (error) {
+            } catch {
               Alert.alert('No se pudieron borrar', 'Intenta de nuevo.');
             }
           },

@@ -151,7 +151,7 @@ export default function ProductoScreen({ navigation, route }: any) {
         }
 
         navigation.goBack();
-      } catch (error) {
+      } catch {
         Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
       }
     },
@@ -214,10 +214,17 @@ export default function ProductoScreen({ navigation, route }: any) {
     setNotaFecha('');
   };
 
+  // Función async dentro del efecto, igual que en Ajustes y RecetaScreen
   useEffect(() => {
-    if (id) {
-      cargarProducto(id);
-    }
+    const cargar = async () => {
+      if (id) {
+        await cargarProducto(id);
+      }
+    };
+    cargar();
+    // Solo debe cargar cuando cambia el id. Si se agrega cargarProducto (como
+    // sugiere el lint), se ejecutaría en cada render y recargaría sin parar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const errorFecha = form.touched.fechaCaducidad ? form.errors.fechaCaducidad : undefined;
@@ -243,7 +250,7 @@ export default function ProductoScreen({ navigation, route }: any) {
       // fechaSalida: para el resumen del mes en Inicio
       await actualizarProducto({ ...productoOriginal, estado: estado, fechaSalida: hoy() });
       await reprogramarAvisos();
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
       return;
     }
@@ -289,7 +296,7 @@ export default function ProductoScreen({ navigation, route }: any) {
                 unidad: producto.unidad,
                 comprado: false,
               });
-            } catch (error) {
+            } catch {
               Alert.alert('No se pudo agregar a la lista', 'Intenta de nuevo desde Compras.');
             }
             navigation.goBack();
@@ -317,7 +324,7 @@ export default function ProductoScreen({ navigation, route }: any) {
               // Ya no existe: sale de los avisos
               await reprogramarAvisos();
               navigation.goBack();
-            } catch (error) {
+            } catch {
               Alert.alert('No se pudo eliminar', 'Intenta de nuevo.');
             }
           },

@@ -12,6 +12,7 @@ import {
   ItemCompra,
   leerListaCompras,
   leerProductos,
+  nuevoId,
   Producto,
 } from '../lib/almacenamiento';
 import { diasRestantes, formatoMexico } from '../lib/fechas';
@@ -59,7 +60,7 @@ export default function ComprasScreen({ navigation }: any) {
     if (!nombreLimpio) return;
 
     const nuevo: ItemCompra = {
-      id: Date.now().toString(),
+      id: nuevoId(),
       nombre: nombreLimpio,
       // Acepta "1.5" y "1,5"; si no es un número válido, usa 1
       cantidad: Number(cantidad.replace(',', '.')) || 1,
@@ -104,7 +105,7 @@ export default function ComprasScreen({ navigation }: any) {
       setNombre('');
       setCantidad('1');
       await cargarLista();
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo agregar', 'Intenta de nuevo.');
     }
   };
@@ -113,7 +114,7 @@ export default function ComprasScreen({ navigation }: any) {
     try {
       await eliminarItemCompra(id);
       await cargarLista();
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo eliminar', 'Intenta de nuevo.');
     }
   };
@@ -123,7 +124,7 @@ export default function ComprasScreen({ navigation }: any) {
     try {
       await actualizarItemCompra({ ...item, comprado: !item.comprado });
       await cargarLista();
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
     }
   };

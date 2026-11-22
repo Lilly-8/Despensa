@@ -110,7 +110,7 @@ export default function PasarDespensaScreen({ navigation }: any) {
             : ` ${sinFecha} se quedaron en Compras porque les falta la fecha.`;
       }
       Alert.alert('Listo', mensaje, [{ text: 'OK', onPress: () => navigation.goBack() }]);
-    } catch (error) {
+    } catch {
       Alert.alert('No se pudo guardar', 'Intenta de nuevo.');
     } finally {
       setGuardando(false);

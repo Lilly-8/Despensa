@@ -68,7 +68,7 @@ export async function buscarProductoPorCodigo(codigo: string): Promise<DatosCodi
       headers: { 'User-Agent': USER_AGENT },
       signal: control.signal,
     });
-  } catch (error) {
+  } catch {
     throw new Error(
       control.signal.aborted
         ? 'La búsqueda del código tardó demasiado.'
@@ -89,7 +89,7 @@ export async function buscarProductoPorCodigo(codigo: string): Promise<DatosCodi
   let datos: any;
   try {
     datos = await respuesta.json();
-  } catch (error) {
+  } catch {
     throw new Error('No se pudo consultar el código.');
   }
 

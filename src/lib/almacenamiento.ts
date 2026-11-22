@@ -17,6 +17,13 @@ export interface Producto {
   fechaSalida?: string; // 'YYYY-MM-DD', cuándo se marcó como consumido o tirado
 }
 
+// Id nuevo a partir de la hora actual en milisegundos.
+// Está aquí y no en la pantalla porque el lint marca Date.now() dentro de un
+// componente (cree que se llama al dibujar, aunque sea al tocar un botón).
+export function nuevoId(): string {
+  return Date.now().toString();
+}
+
 const CLAVE_PRODUCTOS = 'productos';
 
 export async function leerProductos(): Promise<Producto[]> {
