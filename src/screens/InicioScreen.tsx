@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { AppState, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import FilaProducto from '../components/FilaProducto';
+import BarraSeleccion from '../components/BarraSeleccion';
 import { leerProductos, Producto } from '../lib/almacenamiento';
 import { diasRestantes, hoy, nivelUrgencia } from '../lib/fechas';
 import { colores, espacios, bordes } from '../constants/colores';
@@ -83,6 +84,8 @@ function resumenDelMes(productos: Producto[]): ResumenMes {
 export default function InicioScreen({ navigation }: any) {
   const [secciones, setSecciones] = useState<SeccionUrgencia[]>([]);
   const [resumen, setResumen] = useState<ResumenMes>({ aprovechados: 0, tirados: 0 });
+  const [seleccionados, setSeleccionados] = useState<string[]>([]); // ids marcados
+  const enSeleccion = seleccionados.length > 0;
 
   const cargarProductos = async () => {
     const guardados = await leerProductos();
@@ -100,11 +103,48 @@ export default function InicioScreen({ navigation }: any) {
 
   useEffect(() => {
     const sub = navigation.addListener('focus', () => {
+      setSeleccionados([]);
       cargarProductos();
     });
 
     return sub;
   }, [navigation]);
+
+  // Android: el botón de atrás quita la selección en vez de salir de la pantalla
+  useEffect(() => {
+    if (!enSeleccion) return;
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSeleccionados([]);
+      return true; // ya se manejó: no regresa ni cierra la app
+    });
+
+    return () => sub.remove();
+  }, [enSeleccion]);
+
+  // Marca o desmarca un producto
+  const alternarSeleccion = (id: string) => {
+    if (seleccionados.includes(id)) {
+      setSeleccionados(seleccionados.filter((s) => s !== id));
+    } else {
+      setSeleccionados([...seleccionados, id]);
+    }
+  };
+
+  // En modo selección, tocar marca o desmarca; si no, abre el producto
+  const tocarProducto = (producto: Producto) => {
+    if (enSeleccion) {
+      alternarSeleccion(producto.id);
+    } else {
+      navigation.navigate('Producto', { id: producto.id });
+    }
+  };
+
+  // Después de aplicar una acción: la lista y el resumen del mes se actualizan
+  const terminarSeleccion = () => {
+    setSeleccionados([]);
+    cargarProductos();
+  };
 
   return (
     <SafeAreaView style={styles.contenedor} edges={['top']}>
@@ -113,7 +153,9 @@ export default function InicioScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <FilaProducto
             producto={item}
-            onPress={() => navigation.navigate('Producto', { id: item.id })}
+            onPress={() => tocarProducto(item)}
+            onLongPress={() => alternarSeleccion(item.id)}
+            seleccionado={seleccionados.includes(item.id)}
           />
         )}
         renderSectionHeader={({ section }) => (
@@ -185,6 +227,14 @@ export default function InicioScreen({ navigation }: any) {
         contentContainerStyle={styles.lista}
         showsVerticalScrollIndicator={false}
       />
+
+      {enSeleccion ? (
+        <BarraSeleccion
+          seleccionados={seleccionados}
+          onCancelar={() => setSeleccionados([])}
+          onTerminar={terminarSeleccion}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
