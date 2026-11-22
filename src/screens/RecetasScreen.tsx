@@ -143,8 +143,11 @@ export default function RecetasScreen({ navigation }: any) {
     </View>
   );
 
-  return (
-    <SafeAreaView style={styles.contenedor} edges={['top']}>
+  const mostrarCache = desdeCache && !cargando && recetas.length > 0;
+
+  // Todo lo de arriba de las recetas: va dentro de la lista para que se deslice con ella
+  const cabecera = (
+    <View>
       <Encabezado
         etiqueta="Recetas"
         titulo="Qué cocinar hoy"
@@ -175,16 +178,20 @@ export default function RecetasScreen({ navigation }: any) {
         />
       </View>
 
-      {/* Indicador honesto de la caché: de dónde viene lo que se ve */}
-      {desdeCache && !cargando && recetas.length > 0 ? (
-        <View style={[styles.aviso, despensaIgual ? styles.avisoCache : styles.avisoSinConexion]}>
-          <Text style={styles.avisoTitulo}>
-            {despensaIgual ? 'Recetas guardadas' : 'Tu despensa cambió'}
-          </Text>
+      {/* Indicador honesto de la caché. Si nada cambió, basta una línea;
+          si la despensa cambió, caja, porque hay que volver a generar. */}
+      {mostrarCache && despensaIgual ? (
+        <Text style={styles.cacheLinea}>
+          Guardadas el {textoFechaHora(guardadoEn)} · tu despensa no ha cambiado
+        </Text>
+      ) : null}
+
+      {mostrarCache && !despensaIgual ? (
+        <View style={[styles.aviso, styles.avisoSinConexion]}>
+          <Text style={styles.avisoTitulo}>Tu despensa cambió</Text>
           <Text style={styles.avisoTexto}>
-            {despensaIgual
-              ? `Son del ${textoFechaHora(guardadoEn)}. Tu despensa no ha cambiado, así que no se volvieron a pedir.`
-              : `Estas recetas son del ${textoFechaHora(guardadoEn)}, de antes de tus últimos cambios. Toca "Generar recetas" para actualizarlas.`}
+            Estas recetas son del {textoFechaHora(guardadoEn)}, de antes de tus últimos cambios.
+            Toca &quot;Generar recetas&quot; para actualizarlas.
           </Text>
         </View>
       ) : null}
@@ -209,12 +216,17 @@ export default function RecetasScreen({ navigation }: any) {
           </Text>
         </View>
       ) : null}
+    </View>
+  );
 
+  return (
+    <SafeAreaView style={styles.contenedor} edges={['top']}>
       <FlatList
         data={recetas}
         renderItem={renderReceta}
         keyExtractor={(item, index) => index + '-' + item.titulo}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
+        ListHeaderComponent={cabecera}
         ListEmptyComponent={listaVacia}
         contentContainerStyle={styles.lista}
         showsVerticalScrollIndicator={false}
@@ -275,8 +287,12 @@ const styles = StyleSheet.create({
   avisoError: {
     borderLeftColor: colores.urgente,
   },
-  avisoCache: {
-    borderLeftColor: colores.tranquilo,
+  // Recetas guardadas y la despensa igual: solo informa, por eso sin caja
+  cacheLinea: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colores.textoSuave,
+    paddingBottom: espacios.s,
   },
   avisoTitulo: {
     fontSize: 16,
