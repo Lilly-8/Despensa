@@ -231,14 +231,17 @@ export function mismoNombre(nombreA: string, nombreB: string): boolean {
   return palabras(nombreA).some((palabra) => deB.some((otra) => mismaPalabra(palabra, otra)));
 }
 
-// La misma receta, con "tengo" recalculado contra los productos activos
+// La misma receta, con "tengo" recalculado contra lo que sí se puede usar
 export function conIngredientesAlDia(receta: Receta, productos: Producto[]): Receta {
-  const activos = productos.filter((p) => p.estado === 'activo');
+  // Activos y sin caducar. Los que no tienen fecha (sal, arroz…) sí cuentan.
+  const disponibles = productos.filter(
+    (p) => p.estado === 'activo' && (p.fechaCaducidad === '' || diasRestantes(p.fechaCaducidad) >= 0)
+  );
   return {
     ...receta,
     ingredientes: receta.ingredientes.map((ingrediente) => ({
       ...ingrediente,
-      tengo: tengoIngrediente(ingrediente.nombre, activos),
+      tengo: tengoIngrediente(ingrediente.nombre, disponibles),
     })),
   };
 }
