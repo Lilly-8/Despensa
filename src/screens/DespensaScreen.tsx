@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BackHandler, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Encabezado from '../components/Encabezado';
 import CampoTexto from '../components/CampoTexto';
 import FilaProducto from '../components/FilaProducto';
 import ChipFiltro from '../components/ChipFiltro';
+import BarraSeleccion from '../components/BarraSeleccion';
 import { leerProductos, Producto } from '../lib/almacenamiento';
 import { normalizarTexto } from '../lib/texto';
 import { colores, espacios, bordes } from '../constants/colores';
@@ -37,6 +38,8 @@ export default function DespensaScreen({ navigation }: any) {
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState(''); // '' = todas
   const [ubicacion, setUbicacion] = useState(''); // '' = todas
+  const [seleccionados, setSeleccionados] = useState<string[]>([]); // ids marcados
+  const enSeleccion = seleccionados.length > 0;
 
 
   const textoBuscado = normalizarTexto(busqueda);
@@ -57,11 +60,64 @@ export default function DespensaScreen({ navigation }: any) {
 
   useEffect(() => {
     const sub = navigation.addListener('focus', () => {
+      setSeleccionados([]);
       cargarProductos();
     });
 
     return sub; 
   }, [navigation]);
+
+  // Android: el botón de atrás quita la selección en vez de salir de la pantalla
+  useEffect(() => {
+    if (!enSeleccion) return;
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSeleccionados([]);
+      return true; // ya se manejó: no regresa ni cierra la app
+    });
+
+    return () => sub.remove();
+  }, [enSeleccion]);
+
+  // Marca o desmarca un producto
+  const alternarSeleccion = (id: string) => {
+    if (seleccionados.includes(id)) {
+      setSeleccionados(seleccionados.filter((s) => s !== id));
+    } else {
+      setSeleccionados([...seleccionados, id]);
+    }
+  };
+
+  // En modo selección, tocar marca o desmarca; si no, abre el producto
+  const tocarProducto = (producto: Producto) => {
+    if (enSeleccion) {
+      alternarSeleccion(producto.id);
+    } else {
+      navigation.navigate('Producto', { id: producto.id });
+    }
+  };
+
+  // Al buscar o filtrar se borra la selección, para no actuar sobre algo que ya no se ve
+  const cambiarBusqueda = (texto: string) => {
+    setBusqueda(texto);
+    setSeleccionados([]);
+  };
+
+  const cambiarCategoria = (valor: string) => {
+    setCategoria(valor);
+    setSeleccionados([]);
+  };
+
+  const cambiarUbicacion = (valor: string) => {
+    setUbicacion(valor);
+    setSeleccionados([]);
+  };
+
+  // Después de aplicar una acción a los seleccionados
+  const terminarSeleccion = () => {
+    setSeleccionados([]);
+    cargarProductos();
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -80,7 +136,7 @@ export default function DespensaScreen({ navigation }: any) {
         <CampoTexto
           etiqueta="Buscar"
           value={busqueda}
-          onChangeText={setBusqueda}
+          onChangeText={cambiarBusqueda}
           placeholder="Nombre del producto"
         />
       </View>
@@ -91,7 +147,7 @@ export default function DespensaScreen({ navigation }: any) {
           <ChipFiltro
             texto={item.texto}
             seleccionado={categoria === item.valor}
-            onPress={() => setCategoria(item.valor)}
+            onPress={() => cambiarCategoria(item.valor)}
           />
         )}
         keyExtractor={(item) => 'categoria-' + item.valor}
@@ -107,7 +163,7 @@ export default function DespensaScreen({ navigation }: any) {
           <ChipFiltro
             texto={item.texto}
             seleccionado={ubicacion === item.valor}
-            onPress={() => setUbicacion(item.valor)}
+            onPress={() => cambiarUbicacion(item.valor)}
           />
         )}
         keyExtractor={(item) => 'ubicacion-' + item.valor}
@@ -122,7 +178,9 @@ export default function DespensaScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <FilaProducto
             producto={item}
-            onPress={() => navigation.navigate('Producto', { id: item.id })}
+            onPress={() => tocarProducto(item)}
+            onLongPress={() => alternarSeleccion(item.id)}
+            seleccionado={seleccionados.includes(item.id)}
           />
         )}
         keyExtractor={(item) => item.id}
@@ -148,20 +206,31 @@ export default function DespensaScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Escanear: encima del +, con contorno para que el + siga siendo el principal */}
-      <TouchableOpacity
-        style={styles.botonEscanear}
-        onPress={() => navigation.navigate('Escaner')}
-      >
-        <Ionicons name="barcode-outline" size={26} color={colores.primario} />
-      </TouchableOpacity>
+      {enSeleccion ? (
+        // Reemplaza a los botones flotantes mientras hay selección
+        <BarraSeleccion
+          seleccionados={seleccionados}
+          onCancelar={() => setSeleccionados([])}
+          onTerminar={terminarSeleccion}
+        />
+      ) : (
+        <>
+          {/* Escanear: encima del +, con contorno para que el + siga siendo el principal */}
+          <TouchableOpacity
+            style={styles.botonEscanear}
+            onPress={() => navigation.navigate('Escaner')}
+          >
+            <Ionicons name="barcode-outline" size={26} color={colores.primario} />
+          </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.botonAgregar}
-        onPress={() => navigation.navigate('Producto')}
-      >
-        <Ionicons name="add" size={28} color={colores.textoSobrePrimario} />
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.botonAgregar}
+            onPress={() => navigation.navigate('Producto')}
+          >
+            <Ionicons name="add" size={28} color={colores.textoSobrePrimario} />
+          </TouchableOpacity>
+        </>
+      )}
     </SafeAreaView>
   );
 }

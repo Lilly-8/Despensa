@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Producto } from '../lib/almacenamiento';
 import { diasRestantes, formatoMexico, nivelUrgencia } from '../lib/fechas';
 import { UBICACIONES } from '../constants/opciones';
@@ -8,6 +9,8 @@ import { colores, espacios, bordes } from '../constants/colores';
 interface FilaProductoProps {
   producto: Producto;
   onPress: () => void;
+  onLongPress?: () => void; // mantener pulsado (selección múltiple en Despensa)
+  seleccionado?: boolean;
 }
 
 function colorUrgencia(dias: number): string {
@@ -23,19 +26,38 @@ function textoDias(dias: number): string {
   return `Quedan ${dias} días`;
 }
 
-const FilaProducto = memo(({ producto, onPress }: FilaProductoProps) => {
+// Función con nombre dentro de memo, para que el componente tenga nombre en los errores
+const FilaProducto = memo(function FilaProducto({
+  producto,
+  onPress,
+  onLongPress,
+  seleccionado,
+}: FilaProductoProps) {
   const ubicacion = UBICACIONES.find((u) => u.valor === producto.ubicacion);
   const tieneFecha = producto.fechaCaducidad !== '';
   const dias = tieneFecha ? diasRestantes(producto.fechaCaducidad) : 0;
 
   return (
-    <TouchableOpacity style={styles.fila} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.fila, seleccionado && styles.filaSeleccionada]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    >
       <View
         style={[
           styles.barra,
           { backgroundColor: tieneFecha ? colorUrgencia(dias) : colores.borde },
         ]}
       />
+
+      {seleccionado ? (
+        <Ionicons
+          name="checkmark-circle-outline"
+          size={24}
+          color={colores.primario}
+          style={styles.check}
+        />
+      ) : null}
 
       <View style={styles.info}>
         <Text style={styles.nombre}>{producto.nombre}</Text>
@@ -67,6 +89,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: espacios.m,
+    // El fondo de seleccionado se sale un poco a los lados sin mover el contenido
+    marginHorizontal: -espacios.s,
+    paddingHorizontal: espacios.s,
+  },
+  filaSeleccionada: {
+    backgroundColor: colores.superficie,
+  },
+  check: {
+    marginRight: espacios.s,
   },
   barra: {
     width: 4,

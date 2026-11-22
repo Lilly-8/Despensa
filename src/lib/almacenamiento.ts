@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hoy } from './fechas';
 
 export interface Producto {
   id: string; 
@@ -59,6 +60,26 @@ export async function actualizarProducto(productoActualizado: Producto): Promise
 export async function eliminarProducto(id: string): Promise<void> {
   const productos = await leerProductos();
   const nuevos = productos.filter((p) => p.id !== id);
+  await guardarProductos(nuevos);
+}
+
+// Marca varios productos como consumidos o tirados, en una sola escritura.
+// fechaSalida: para el resumen del mes en Inicio.
+export async function cambiarEstadoVarios(
+  ids: string[],
+  estado: 'consumido' | 'tirado'
+): Promise<void> {
+  const productos = await leerProductos();
+  const nuevos = productos.map((p) =>
+    ids.includes(p.id) ? { ...p, estado: estado, fechaSalida: hoy() } : p
+  );
+  await guardarProductos(nuevos);
+}
+
+// Quita varios productos de la lista, en una sola escritura.
+export async function eliminarVarios(ids: string[]): Promise<void> {
+  const productos = await leerProductos();
+  const nuevos = productos.filter((p) => !ids.includes(p.id));
   await guardarProductos(nuevos);
 }
 
