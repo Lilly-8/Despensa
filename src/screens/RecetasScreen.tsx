@@ -165,10 +165,7 @@ export default function RecetasScreen({ navigation }: any) {
       {sinConexion ? (
         <View style={[styles.aviso, styles.avisoSinConexion]}>
           <Text style={styles.avisoTitulo}>Sin conexión</Text>
-          <Text style={styles.avisoTexto}>
-            Las recetas necesitan internet. Tu despensa, la lista de compras y los avisos
-            funcionan igual.
-          </Text>
+          <Text style={styles.avisoTexto}>Las recetas necesitan internet.</Text>
         </View>
       ) : null}
 

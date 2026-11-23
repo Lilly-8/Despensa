@@ -2,14 +2,14 @@
 
 export const colores = {
   // Base
-  fondo: '#F6F0E4', 
+  fondo: '#F4F1EA',
   superficie: '#FBF7EF', 
   texto: '#2A211B', 
   textoSuave: '#6B5E52', 
-  borde: '#DDD2BF', 
+  borde: '#DDD8CD', // mismo tono que el fondo, un poco más oscuro
 
   primario: '#5B6B2F', 
-  textoSobrePrimario: '#F6F0E4',
+  textoSobrePrimario: '#F4F1EA', // el mismo crema del fondo
 
   // Urgencia por caducidad
   urgente: '#C8442E', 

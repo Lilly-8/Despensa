@@ -153,8 +153,11 @@ export default function DespensaScreen({ navigation, route }: any) {
     setRefreshing(false);
   };
 
-  return (
-    <SafeAreaView style={styles.contenedor} edges={['top']}>
+  // Todo lo de arriba de los productos: va dentro de la lista para que se deslice
+  // con ella, como en Inicio y Recetas. Es un elemento ya armado (no una función)
+  // para que el buscador no pierda el teclado con cada letra.
+  const cabecera = (
+    <View>
       <Encabezado
         etiqueta="Despensa"
         titulo="Tus productos"
@@ -184,9 +187,16 @@ export default function DespensaScreen({ navigation, route }: any) {
           </TouchableOpacity>
         ) : null}
       </View>
+    </View>
+  );
 
+  return (
+    <SafeAreaView style={styles.contenedor} edges={['top']}>
       <FlatList
         data={productosFiltrados}
+        ListHeaderComponent={cabecera}
+        // Con el teclado abierto, el primer toque en un producto sí lo abre
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => (
           <FilaProducto
             producto={item}
