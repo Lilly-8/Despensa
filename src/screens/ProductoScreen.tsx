@@ -24,7 +24,13 @@ import { pedirPermisoNotificaciones, reprogramarAvisos } from '../lib/notificaci
 import { sugerirFecha } from '../lib/vidaUtil';
 import { esDemo } from '../lib/demo';
 import { colores, espacios, bordes } from '../constants/colores';
-import { UBICACIONES, UNIDADES, CATEGORIAS } from '../constants/opciones';
+import {
+  UBICACIONES,
+  UNIDADES,
+  CATEGORIAS,
+  LARGO_MAXIMO_NOMBRE,
+  LARGO_MAXIMO_CANTIDAD,
+} from '../constants/opciones';
 
 interface ProductoForm {
   nombre: string;
@@ -83,6 +89,16 @@ export default function ProductoScreen({ navigation, route }: any) {
 
       if (!values.nombre.trim()) {
         errors.nombre = 'Escribe el nombre del producto';
+      }
+
+      // Vacía se guarda como 1 (como siempre); escrita, tiene que ser un número mayor que 0.
+      // Acepta "1.5" y "1,5". Así "-3" o "0" no llegan a guardarse.
+      const cantidadEscrita = values.cantidad.trim();
+      if (cantidadEscrita !== '') {
+        const numero = Number(cantidadEscrita.replace(',', '.'));
+        if (isNaN(numero) || numero <= 0) {
+          errors.cantidad = 'La cantidad debe ser mayor que 0';
+        }
       }
 
       if (!values.fechaCaducidad) {
@@ -366,6 +382,7 @@ export default function ProductoScreen({ navigation, route }: any) {
           onBlur={form.handleBlur('nombre')}
           placeholder="Leche, jitomate, arroz..."
           error={form.touched.nombre ? form.errors.nombre : undefined}
+          maxLength={LARGO_MAXIMO_NOMBRE}
         />
         <CampoTexto
           etiqueta="Cantidad"
@@ -373,6 +390,8 @@ export default function ProductoScreen({ navigation, route }: any) {
           onChangeText={form.handleChange('cantidad')}
           onBlur={form.handleBlur('cantidad')}
           keyboardType="decimal-pad"
+          error={form.touched.cantidad ? form.errors.cantidad : undefined}
+          maxLength={LARGO_MAXIMO_CANTIDAD}
         />
 
         {/* Unidad justo después de cantidad: "2" y "kg" son un solo dato */}

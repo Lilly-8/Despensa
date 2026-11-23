@@ -122,7 +122,10 @@ export default function PasarDespensaScreen({ navigation }: any) {
     return (
       <View style={styles.fila}>
         <TouchableOpacity style={styles.info} onPress={() => abrirFormulario(item)}>
-          <Text style={styles.nombre}>{item.item.nombre}</Text>
+          {/* Máximo 2 líneas con "…": el nombre completo se ve al tocarlo */}
+          <Text style={styles.nombre} numberOfLines={2}>
+            {item.item.nombre}
+          </Text>
           <Text style={styles.detalle}>
             {item.item.cantidad} {item.item.unidad} · {ubicacion ? ubicacion.texto : ''}
           </Text>

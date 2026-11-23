@@ -9,6 +9,7 @@ interface CampoTextoProps {
   placeholder?: string;
   error?: string;
   keyboardType?: KeyboardTypeOptions;
+  maxLength?: number; // cuántas letras se pueden escribir como máximo
 }
 
 export default function CampoTexto({
@@ -19,6 +20,7 @@ export default function CampoTexto({
   placeholder,
   error,
   keyboardType,
+  maxLength,
 }: CampoTextoProps) {
   return (
     <View style={styles.contenedor}>
@@ -31,6 +33,7 @@ export default function CampoTexto({
         placeholder={placeholder}
         placeholderTextColor={colores.textoSuave}
         keyboardType={keyboardType}
+        maxLength={maxLength}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>

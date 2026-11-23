@@ -60,7 +60,10 @@ const FilaProducto = memo(function FilaProducto({
       ) : null}
 
       <View style={styles.info}>
-        <Text style={styles.nombre}>{producto.nombre}</Text>
+        {/* Máximo 2 líneas con "…": el nombre completo se ve al abrir el producto */}
+        <Text style={styles.nombre} numberOfLines={2}>
+          {producto.nombre}
+        </Text>
         <Text style={styles.detalle}>
           {producto.cantidad} {producto.unidad} · {ubicacion ? ubicacion.texto : producto.ubicacion}
         </Text>

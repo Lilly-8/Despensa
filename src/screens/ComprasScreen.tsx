@@ -17,6 +17,7 @@ import {
 import { diasRestantes, formatoMexico } from '../lib/fechas';
 import { normalizarTexto } from '../lib/texto';
 import { colores, espacios, bordes } from '../constants/colores';
+import { LARGO_MAXIMO_CANTIDAD, LARGO_MAXIMO_NOMBRE } from '../constants/opciones';
 
 interface SeccionCompras {
   titulo: string;
@@ -58,11 +59,14 @@ export default function ComprasScreen({ navigation }: any) {
     const nombreLimpio = nombre.trim();
     if (!nombreLimpio) return;
 
+    // Acepta "1.5" y "1,5". Si no es un número, o es 0 o negativo ("-3"), usa 1.
+    // (NaN > 0 es falso, así que "abc" también termina en 1.)
+    const numero = Number(cantidad.replace(',', '.'));
+
     const nuevo: ItemCompra = {
       id: nuevoId(),
       nombre: nombreLimpio,
-      // Acepta "1.5" y "1,5"; si no es un número válido, usa 1
-      cantidad: Number(cantidad.replace(',', '.')) || 1,
+      cantidad: numero > 0 ? numero : 1,
       unidad: 'pza',
       comprado: false,
     };
@@ -148,7 +152,11 @@ export default function ComprasScreen({ navigation }: any) {
           size={24}
           color={item.comprado ? colores.primario : colores.textoSuave}
         />
-        <Text style={[styles.nombre, item.comprado ? styles.nombreComprado : null]}>
+        {/* Máximo 2 líneas con "…": el nombre completo se ve al abrirlo */}
+        <Text
+          style={[styles.nombre, item.comprado ? styles.nombreComprado : null]}
+          numberOfLines={2}
+        >
           {item.nombre}
         </Text>
       </TouchableOpacity>
@@ -184,6 +192,7 @@ export default function ComprasScreen({ navigation }: any) {
             value={nombre}
             onChangeText={setNombre}
             placeholder="Leche, huevos..."
+            maxLength={LARGO_MAXIMO_NOMBRE}
           />
         </View>
         <View style={styles.campoCantidad}>
@@ -192,6 +201,7 @@ export default function ComprasScreen({ navigation }: any) {
             value={cantidad}
             onChangeText={setCantidad}
             keyboardType="decimal-pad"
+            maxLength={LARGO_MAXIMO_CANTIDAD}
           />
         </View>
         <TouchableOpacity

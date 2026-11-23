@@ -19,15 +19,27 @@ const SEGUNDOS_MAXIMOS = 10;
 // la leche: ["en:dairies", "en:milks-liquid-and-powder", "en:milks"].
 // Se revisan en este orden y gana la primera regla que coincida.
 // Bebidas va primero porque los jugos también traen "en:fruits".
+// Pan y botanas van antes que granos porque el pan y las galletas también
+// traen "en:cereals-and-their-products".
 const REGLAS_CATEGORIA = [
   { etiquetas: ['en:beverages'], categoria: 'bebidas' },
-  { etiquetas: ['en:dairies'], categoria: 'lacteos' },
-  { etiquetas: ['en:meats', 'en:poultry', 'en:fishes'], categoria: 'carnes' },
+  { etiquetas: ['en:dairies', 'en:eggs'], categoria: 'lacteos' },
+  { etiquetas: ['en:meats', 'en:poultry', 'en:fishes', 'en:seafood'], categoria: 'carnes' },
+  { etiquetas: ['en:meals'], categoria: 'preparada' },
   { etiquetas: ['en:vegetables'], categoria: 'verduras' },
   { etiquetas: ['en:fruits'], categoria: 'frutas' },
   { etiquetas: ['en:canned-foods'], categoria: 'enlatados' },
+  { etiquetas: ['en:breads', 'en:flatbreads'], categoria: 'panaderia' },
   {
-    etiquetas: ['en:cereals-and-their-products', 'en:breads', 'en:pastas', 'en:legumes'],
+    etiquetas: ['en:biscuits-and-cakes', 'en:sweet-snacks', 'en:salty-snacks', 'en:confectioneries'],
+    categoria: 'botanas',
+  },
+  {
+    etiquetas: ['en:condiments', 'en:sauces', 'en:spices', 'en:vegetable-oils', 'en:sugars'],
+    categoria: 'condimentos',
+  },
+  {
+    etiquetas: ['en:cereals-and-their-products', 'en:pastas', 'en:legumes'],
     categoria: 'granos',
   },
 ];
@@ -44,7 +56,12 @@ function categoriaDesdeEtiquetas(etiquetas: string[]): string {
 // Dónde se suele guardar. Es solo una sugerencia: el usuario la cambia en el
 // formulario y la caché recuerda lo que eligió.
 function ubicacionSugerida(categoria: string): 'refrigerador' | 'alacena' {
-  if (categoria === 'lacteos' || categoria === 'carnes' || categoria === 'verduras') {
+  if (
+    categoria === 'lacteos' ||
+    categoria === 'carnes' ||
+    categoria === 'verduras' ||
+    categoria === 'preparada'
+  ) {
     return 'refrigerador';
   }
   return 'alacena';
